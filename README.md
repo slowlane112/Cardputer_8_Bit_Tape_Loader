@@ -14,22 +14,22 @@ G6: Commodore motor pin (C-3 cassette motor)<br>
 G5: Audio out<br>
 G15: Remote jack
 
-**G4 - Commodore sense pin - connect via 2N3904 transistor**
+**G4 - Commodore sense pin - connect via 2N3904 transistor**<br>
 Cardputer G4 -> 4k7 resistor -> 2N3904 base<br>
 Commodore sense pin -> 2N3904 collector<br>
 2N3904 emitter -> ground<br>
 2N3904 base -> 100k resistor -> ground<br>
 
 
-**G6 - Commodore motor pin - needs voltage divider**
+**G6 - Commodore motor pin - needs voltage divider**<br>
 Cardputer G6 -> 15k resistor -> Commodore motor pin<br>
 Commodore motor pin -> 15k resistor -> ground
 
-**G3 - Commodore data pin**
+**G3 - Commodore data pin**<br>
 Cardputer G3 -> direct -> Commodore data pin
 
-**G5 - Audio Out**
+**G5 - Audio Out**<br>
 Cardputer G5 -> 100 ohm resistor -> audio jack
 
-**G15 - Remote**
+**G15 - Remote**<br>
 Cardputer G15 -> direct -> Remote jack
