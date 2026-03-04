@@ -23,11 +23,12 @@ Playing: SENSE = LOW - DATA = PULSE
 Paused by motor: No change to SENSE and DATA
 */
 
+volatile bool commodore_player_file_valid = false;
 volatile uint8_t commodore_player_data_tracker = 0;
 volatile size_t commodore_player_pos = 0;
 volatile bool commodore_player_load_buffer = false;
 volatile size_t commodore_player_buffer_overlap = 0;
-volatile bool commodore_player_display_ready = false;
+static volatile bool commodore_player_display_ready = false;
 volatile bool commodore_player_tape_status = false; // playing / stopped
 volatile bool commodore_player_process_active = false; // tape_loaded
 volatile bool commodore_player_user_tape_status = false;
@@ -56,6 +57,16 @@ static bool has_data_activity() {
 	return false;
 }
 
+static bool tap_valid(const uint8_t *buf, size_t size)
+{
+    if (!buf || size < 20) return false;
+
+    if (memcmp(buf, "C64-TAPE-RAW", 12) != 0)
+        return false;
+
+    return true;
+}
+
 void display_progress(void) {
 	
 	for (int y = HEADER_HEIGHT; y < DISPLAY_HEIGHT - FOOTER_HEIGHT; y++) {
@@ -64,69 +75,78 @@ void display_progress(void) {
 		
 			framebuffer[(y * DISPLAY_WIDTH) + x] = BG_COLOR;
 		}
+		
 	}
 	
 	draw_header((const char *)file_name_scroll((const char *)file_browser_file_name));
 	
-	int pos_x = 4;
-	int pos_y = 22;
+	if (commodore_player_file_valid) {
+	
+		int pos_x = 4;
+		int pos_y = 22;
 
-	char buf_system[32]; 
-	sprintf(buf_system, "System: %s", (commodore_player_system == 0 ? "C64" : (commodore_player_system == 1 ? "VIC20" : "C16")));
-	
-	graphic_display_text(buf_system, pos_y, pos_x, LABEL_COLOR, BG_COLOR);
-	
-	pos_y = 42;
+		char buf_system[32]; 
+		sprintf(buf_system, "System: %s", (commodore_player_system == 0 ? "C64" : (commodore_player_system == 1 ? "VIC20" : "C16")));
+		
+		graphic_display_text(buf_system, pos_y, pos_x, LABEL_COLOR, BG_COLOR);
+		
+		pos_y = 42;
 
-	char buf_format[32]; 
-	sprintf(buf_format, "Format: %s", (commodore_player_format == 0 ? "PAL" : "NTSC"));
-	
-	graphic_display_text(buf_format, pos_y, pos_x, LABEL_COLOR, BG_COLOR);
-	
-	pos_y = 24;
-	pos_x = 170;
-	
-	graphic_draw_status_indicator("Motor", gpio_get_level(COMMODORE_MOTOR_PIN), pos_x, pos_y, INDICATOR_MOTOR_COLOR, INDICATOR_OFF_COLOR);
-	
-	
-	pos_y = pos_y + 24;
-	
-	graphic_draw_status_indicator("Data", has_data_activity(), pos_x, pos_y, INDICATOR_DATA_COLOR, INDICATOR_OFF_COLOR);
-	
-	size_t display_pos = stop_pos == 0 ? commodore_player_pos : stop_pos;
-	
-	pos_x = 4;
-	pos_y = 70;
+		char buf_format[32]; 
+		sprintf(buf_format, "Format: %s", (commodore_player_format == 0 ? "PAL" : "NTSC"));
+		
+		graphic_display_text(buf_format, pos_y, pos_x, LABEL_COLOR, BG_COLOR);
+		
+		pos_y = 24;
+		pos_x = 170;
+		
+		graphic_draw_status_indicator("Motor", gpio_get_level(COMMODORE_MOTOR_PIN), pos_x, pos_y, INDICATOR_MOTOR_COLOR, INDICATOR_OFF_COLOR);
+		
+		
+		pos_y = pos_y + 24;
+		
+		graphic_draw_status_indicator("Data", has_data_activity(), pos_x, pos_y, INDICATOR_DATA_COLOR, INDICATOR_OFF_COLOR);
+		
+		size_t display_pos = stop_pos == 0 ? commodore_player_pos : stop_pos;
+		
+		pos_x = 4;
+		pos_y = 70;
 
-	char buf_pos[32]; 
-	sprintf(buf_pos, "%zu of %zu", display_pos - TAP_HEADER_SIZE, file_browser_file_len - TAP_HEADER_SIZE);
-	
-	graphic_display_text(buf_pos, pos_y, pos_x, LABEL_COLOR, BG_COLOR);
-	
-	pos_y = 90;
+		char buf_pos[32]; 
+		sprintf(buf_pos, "%zu of %zu", display_pos - TAP_HEADER_SIZE, file_browser_file_len - TAP_HEADER_SIZE);
+		
+		graphic_display_text(buf_pos, pos_y, pos_x, LABEL_COLOR, BG_COLOR);
+		
+		pos_y = 90;
 
-	graphic_draw_progress_bar(display_pos - TAP_HEADER_SIZE, file_browser_file_len - TAP_HEADER_SIZE, pos_x, pos_y, commodore_player_tape_status ? PROGRESS_BAR_ON_COLOR : PROGRESS_BAR_OFF_COLOR, BG_COLOR);
+		graphic_draw_progress_bar(display_pos - TAP_HEADER_SIZE, file_browser_file_len - TAP_HEADER_SIZE, pos_x, pos_y, commodore_player_tape_status ? PROGRESS_BAR_ON_COLOR : PROGRESS_BAR_OFF_COLOR, BG_COLOR);
 
-	
-	graphic_footer_button_t btn1 = {
-		.text = "1-Play",
-		.fg_color = (commodore_player_tape_status ? BUTTON_DISABLED_LABEL_COLOR : FOOTER_LABEL_COLOR),
-		.bg_color = (commodore_player_tape_status ? BUTTON_PLAY_ON_BG_COLOR : FOOTER_BG_COLOR)
-	};
-	
-	graphic_footer_button_t btn2 = {
-		.text = "2-Stop",
-		.fg_color = (commodore_player_tape_status && !commodore_player_user_tape_status) ? BUTTON_STOP_STOPPING_LABEL_COLOR : (commodore_player_tape_status ? FOOTER_LABEL_COLOR : BUTTON_DISABLED_LABEL_COLOR),
-		.bg_color = FOOTER_BG_COLOR
-	};
-	
-	graphic_footer_button_t btn3 = {
-		.text = "3-Reset",
-		.fg_color = (commodore_player_tape_status ? BUTTON_DISABLED_LABEL_COLOR : FOOTER_LABEL_COLOR),
-		.bg_color = FOOTER_BG_COLOR
-	};
+		
+		graphic_footer_button_t btn1 = {
+			.text = "1-Play",
+			.fg_color = (commodore_player_tape_status ? BUTTON_DISABLED_LABEL_COLOR : FOOTER_LABEL_COLOR),
+			.bg_color = (commodore_player_tape_status ? BUTTON_PLAY_ON_BG_COLOR : FOOTER_BG_COLOR)
+		};
+		
+		graphic_footer_button_t btn2 = {
+			.text = "2-Stop",
+			.fg_color = (commodore_player_tape_status && !commodore_player_user_tape_status) ? BUTTON_STOP_STOPPING_LABEL_COLOR : (commodore_player_tape_status ? FOOTER_LABEL_COLOR : BUTTON_DISABLED_LABEL_COLOR),
+			.bg_color = FOOTER_BG_COLOR
+		};
+		
+		graphic_footer_button_t btn3 = {
+			.text = "3-Reset",
+			.fg_color = (commodore_player_tape_status ? BUTTON_DISABLED_LABEL_COLOR : FOOTER_LABEL_COLOR),
+			.bg_color = FOOTER_BG_COLOR
+		};
 
-	draw_footer(&btn1, &btn2, &btn3);
+		draw_footer(&btn1, &btn2, &btn3);
+		
+	}
+	else {
+		
+		graphic_display_invalid_file_screen("Commodore");
+	}
 	
 	
 	display_draw();
@@ -138,27 +158,35 @@ static void process_keyboard(void)
 	
 	char key = keyboard_get_key();
 	
-	if (key == '1') { // PLAY
-        if (!commodore_player_tape_status) {
-			stop_pos = 0;
-			processed_data_tracker = commodore_player_data_tracker;
-			commodore_player_user_tape_status = true;
+	if (commodore_player_file_valid) {
+	
+		if (key == '1') { // PLAY
+			if (!commodore_player_tape_status) {
+				stop_pos = 0;
+				processed_data_tracker = commodore_player_data_tracker;
+				commodore_player_user_tape_status = true;
+			}
 		}
-    }
-    else if (key == '2') { // STOP
-		if (commodore_player_tape_status) {
-			stop_pos = commodore_player_pos;
-			commodore_player_user_tape_status = false;
+		else if (key == '2') { // STOP
+			if (commodore_player_tape_status) {
+				stop_pos = commodore_player_pos;
+				commodore_player_user_tape_status = false;
+			}
+		}
+		 else if (key == '3') { // Reset
+			if (commodore_player_tape_status == false) { // tape stopped
+				stop_pos = 0;
+				commodore_player_pos = TAP_HEADER_SIZE; // reset tape position
+			}
+		}
+		else if (key == 0x87) { // Exit
+			if (commodore_player_tape_status == false) { // tape stopped
+				commodore_player_process_active = false; // exit tape
+			}
 		}
 	}
-	 else if (key == '3') { // Reset
-		if (commodore_player_tape_status == false) { // tape stopped
-			stop_pos = 0;
-			commodore_player_pos = TAP_HEADER_SIZE; // reset tape position
-		}
-	}
-    else if (key == 0x87) { // Exit
-		if (commodore_player_tape_status == false) { // tape stopped
+	else {
+		if (key == 0x87) { // Exit
 			commodore_player_process_active = false; // exit tape
 		}
 	}
@@ -191,15 +219,20 @@ static void tape_task(void *arg) {
 
 	size_t header_len = sd_read_chunk(file_browser_file, file_browser_file_len, 0, header_data, TAP_HEADER_SIZE);
 
-    if (header_len == 20) {
+    if (tap_valid(header_data, header_len)) {
 
 		tap_header_t *hdr = (tap_header_t *)header_data;
     
 		commodore_player_system = hdr->machine;
 		commodore_player_format = hdr->video;
 
+		commodore_player_file_valid = true;
+		commodore_player_display_ready = true;
 		commodore_tap_main();
 
+	}
+	else {
+		commodore_player_display_ready = true;
 	}
 
     xSemaphoreGive(rom_done_sem);
@@ -208,7 +241,7 @@ static void tape_task(void *arg) {
 
 void commodore_player_main()
 {
-	
+	commodore_player_file_valid = false;
 	stop_pos = 0;
 	commodore_player_process_active = true;
 	commodore_player_display_ready = false;

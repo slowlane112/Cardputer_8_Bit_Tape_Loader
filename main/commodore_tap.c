@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
 #include "freertos/FreeRTOS.h"
 #include "driver/gpio.h"
 #include "file_browser.h"
@@ -118,7 +117,6 @@ void commodore_tap_main()
 {
 	commodore_player_buffer_overlap = 4;
 	commodore_player_pos = TAP_HEADER_SIZE;
-	commodore_player_display_ready = true;
     commodore_player_tape_status  = false;
     commodore_player_user_tape_status = false;
 

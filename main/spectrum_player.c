@@ -17,6 +17,7 @@
 #include "tape_buffer.h"
 #include "nvs_flash.h"
 
+volatile bool spectrum_player_file_valid = false;
 volatile uint8_t spectrum_player_data_tracker = 0;
 volatile size_t spectrum_player_pos = 0;
 volatile bool spectrum_player_load_buffer = false;
@@ -65,6 +66,29 @@ static bool has_data_activity() {
 	return false;
 }
 
+static bool tap_valid(const uint8_t *buf, size_t len) {
+
+    if (len < 21) return false;
+
+    uint16_t block_len = buf[0] | (buf[1] << 8);
+    if (block_len != 19) return false;
+
+    if (block_len + 2 > len) return false;
+
+    if (buf[2] != 0x00) return false;
+
+    uint8_t type = buf[13 + 2];
+    if (type != 0x00 && type != 0x03) return false;
+
+    uint8_t chk = 0;
+    for (uint16_t i = 0; i < block_len; i++) {
+        chk ^= buf[2 + i];
+    }
+    if (chk != 0) return false;
+
+    return true;
+}
+
 static void display_progress(void) {
 	
 	
@@ -77,65 +101,72 @@ static void display_progress(void) {
 	}
 	
 	draw_header((const char *)file_name_scroll((const char *)file_browser_file_name));
-	
-	int pos_x = 4;
-	int pos_y = 30;
 
-	graphic_display_text("System:", pos_y, pos_x, LABEL_COLOR, BG_COLOR);
-	pos_x = pos_x + (8 * 8);
+	if (spectrum_player_file_valid) {
 	
-	if (!spectrum_player_tape_status) {
-		graphic_display_text("<", pos_y, pos_x, spectrum_player_system_type == 0  ? DISABLED_LABEL_COLOR : LABEL_COLOR, BG_COLOR);
-		pos_x = pos_x + (8 * 2);
+		int pos_x = 4;
+		int pos_y = 30;
+
+		graphic_display_text("System:", pos_y, pos_x, LABEL_COLOR, BG_COLOR);
+		pos_x = pos_x + (8 * 8);
+		
+		if (!spectrum_player_tape_status) {
+			graphic_display_text("<", pos_y, pos_x, spectrum_player_system_type == 0  ? DISABLED_LABEL_COLOR : LABEL_COLOR, BG_COLOR);
+			pos_x = pos_x + (8 * 2);
+		}
+		
+		graphic_display_text(spectrum_system_types[spectrum_player_system_type], pos_y, pos_x, LABEL_COLOR, BG_COLOR);
+		
+		if (!spectrum_player_tape_status) {
+			pos_x = pos_x + ((strlen(spectrum_system_types[spectrum_player_system_type]) + 1) * 8);
+			graphic_display_text(">", pos_y, pos_x, spectrum_player_system_type == spectrum_player_system_types_count - 1  ? DISABLED_LABEL_COLOR : LABEL_COLOR, BG_COLOR);
+		}
+		
+		pos_y = 30;
+		pos_x = 178;
+		
+		graphic_draw_status_indicator("Data", has_data_activity(), pos_x, pos_y, INDICATOR_DATA_COLOR, INDICATOR_OFF_COLOR);
+		
+		
+		size_t display_pos = stop_pos == 0 ? spectrum_player_pos : stop_pos;
+		
+		pos_x = 4;
+		pos_y = 70;
+
+		char buf_pos[32]; 
+		sprintf(buf_pos, "%zu of %zu", display_pos, file_browser_file_len);
+		
+		graphic_display_text(buf_pos, pos_y, pos_x, LABEL_COLOR, BG_COLOR);
+		
+		pos_y = 90;
+
+		graphic_draw_progress_bar(display_pos, file_browser_file_len, pos_x, pos_y, spectrum_player_tape_status ? PROGRESS_BAR_ON_COLOR : PROGRESS_BAR_OFF_COLOR, BG_COLOR);
+		
+		
+		graphic_footer_button_t btn1 = {
+			.text = "1-Play",
+			.fg_color = (spectrum_player_tape_status ? BUTTON_DISABLED_LABEL_COLOR : FOOTER_LABEL_COLOR),
+			.bg_color = (spectrum_player_tape_status ? BUTTON_PLAY_ON_BG_COLOR : FOOTER_BG_COLOR)
+		};
+		
+		graphic_footer_button_t btn2 = {
+			.text = "2-Stop",
+			.fg_color = (spectrum_player_tape_status && !spectrum_player_user_tape_status) ? BUTTON_STOP_STOPPING_LABEL_COLOR : (spectrum_player_tape_status ? FOOTER_LABEL_COLOR : BUTTON_DISABLED_LABEL_COLOR),
+			.bg_color = FOOTER_BG_COLOR
+		};
+		
+		graphic_footer_button_t btn3 = {
+			.text = "3-Reset",
+			.fg_color = (spectrum_player_tape_status ? BUTTON_DISABLED_LABEL_COLOR : FOOTER_LABEL_COLOR),
+			.bg_color = FOOTER_BG_COLOR
+		};
+
+		draw_footer(&btn1, &btn2, &btn3);
+		
 	}
-	
-	graphic_display_text(spectrum_system_types[spectrum_player_system_type], pos_y, pos_x, LABEL_COLOR, BG_COLOR);
-	
-	if (!spectrum_player_tape_status) {
-		pos_x = pos_x + ((strlen(spectrum_system_types[spectrum_player_system_type]) + 1) * 8);
-		graphic_display_text(">", pos_y, pos_x, spectrum_player_system_type == spectrum_player_system_types_count - 1  ? DISABLED_LABEL_COLOR : LABEL_COLOR, BG_COLOR);
+	else {
+		graphic_display_invalid_file_screen("ZX Spectrum");
 	}
-	
-	pos_y = 30;
-	pos_x = 178;
-	
-	graphic_draw_status_indicator("Data", has_data_activity(), pos_x, pos_y, INDICATOR_DATA_COLOR, INDICATOR_OFF_COLOR);
-	
-	
-	size_t display_pos = stop_pos == 0 ? spectrum_player_pos : stop_pos;
-	
-	pos_x = 4;
-	pos_y = 70;
-
-	char buf_pos[32]; 
-	sprintf(buf_pos, "%zu of %zu", display_pos, file_browser_file_len);
-	
-	graphic_display_text(buf_pos, pos_y, pos_x, LABEL_COLOR, BG_COLOR);
-	
-	pos_y = 90;
-
-	graphic_draw_progress_bar(display_pos, file_browser_file_len, pos_x, pos_y, spectrum_player_tape_status ? PROGRESS_BAR_ON_COLOR : PROGRESS_BAR_OFF_COLOR, BG_COLOR);
-	
-	
-	graphic_footer_button_t btn1 = {
-		.text = "1-Play",
-		.fg_color = (spectrum_player_tape_status ? BUTTON_DISABLED_LABEL_COLOR : FOOTER_LABEL_COLOR),
-		.bg_color = (spectrum_player_tape_status ? BUTTON_PLAY_ON_BG_COLOR : FOOTER_BG_COLOR)
-	};
-	
-	graphic_footer_button_t btn2 = {
-		.text = "2-Stop",
-		.fg_color = (spectrum_player_tape_status && !spectrum_player_user_tape_status) ? BUTTON_STOP_STOPPING_LABEL_COLOR : (spectrum_player_tape_status ? FOOTER_LABEL_COLOR : BUTTON_DISABLED_LABEL_COLOR),
-		.bg_color = FOOTER_BG_COLOR
-	};
-	
-	graphic_footer_button_t btn3 = {
-		.text = "3-Reset",
-		.fg_color = (spectrum_player_tape_status ? BUTTON_DISABLED_LABEL_COLOR : FOOTER_LABEL_COLOR),
-		.bg_color = FOOTER_BG_COLOR
-	};
-
-	draw_footer(&btn1, &btn2, &btn3);
 	
 	display_draw();
 	
@@ -157,44 +188,52 @@ static void system_down(void)
 	}
 }
 
-
 static void process_keyboard(void)
 {
 	
 	char key = keyboard_get_key();
 	
-	if (key == '1') { // PLAY
-        if (!spectrum_player_tape_status) {
-			stop_pos = 0;
-			processed_data_tracker = spectrum_player_data_tracker;
-			spectrum_player_user_tape_status = true;
+	if (spectrum_player_file_valid) {
+		
+		if (key == '1') { // PLAY
+			if (!spectrum_player_tape_status) {
+				stop_pos = 0;
+				processed_data_tracker = spectrum_player_data_tracker;
+				spectrum_player_user_tape_status = true;
+			}
 		}
-    }
-    else if (key == '2') { // STOP
-		if (spectrum_player_tape_status) {
-			stop_pos = spectrum_player_pos;
-			spectrum_player_user_tape_status = false;
+		else if (key == '2') { // STOP
+			if (spectrum_player_tape_status) {
+				stop_pos = spectrum_player_pos;
+				spectrum_player_user_tape_status = false;
+			}
 		}
+		 else if (key == '3') { // Reset
+			if (spectrum_player_tape_status == false) { // tape stopped
+				stop_pos = 0;
+				spectrum_player_pos = 0; // reset tape position
+			}
+		}
+		else if (key == 0x87) { // Exit
+			if (spectrum_player_tape_status == false) { // tape stopped
+				spectrum_player_process_active = false; // exit tape
+			}
+		}
+		else if (key == '/') { // System Up
+			if (spectrum_player_tape_status == false) { // tape stopped
+				system_up();
+			}
+		}
+		else if (key == ',') { // System Down
+			if (spectrum_player_tape_status == false) { // tape stopped
+				system_down();
+			}
+		}
+	
 	}
-	 else if (key == '3') { // Reset
-		if (spectrum_player_tape_status == false) { // tape stopped
-			stop_pos = 0;
-			spectrum_player_pos = 0; // reset tape position
-		}
-	}
-    else if (key == 0x87) { // Exit
-		if (spectrum_player_tape_status == false) { // tape stopped
-			spectrum_player_process_active = false; // exit tape
-		}
-	}
-	else if (key == '/') { // System Up
-		if (spectrum_player_tape_status == false) { // tape stopped
-			system_up();
-		}
-	}
-	else if (key == ',') { // System Down
-		if (spectrum_player_tape_status == false) { // tape stopped
-			system_down();
+	else {
+		if (key == 0x87) { // Exit
+			spectrum_player_process_active = false;
 		}
 	}
 }
@@ -222,24 +261,24 @@ static void main_task(void *arg)
 static void tape_task(void *arg)
 {
 
-	uint8_t header_data[20];
+	uint8_t header_data[100];
 
-	size_t size = sd_read_chunk(file_browser_file, file_browser_file_len, 0, header_data, 20);
-
-	if (size > 0) {
+	size_t header_size = sd_read_chunk(file_browser_file, file_browser_file_len, 0, header_data, 100);
 		
+	if (header_size > 7 && memcmp(header_data, "ZXTape!", 7) == 0) {
+		spectrum_player_file_valid = true;
 		spectrum_player_display_ready = true;
-			
-		if (memcmp(header_data, "ZXTape!", 7) == 0) {
-			spectrum_tzx_main(); 
-			
-		}
-		else {
-			spectrum_tap_main(); 
-			
-		}
-	
+		spectrum_tzx_main(); 
 	}
+	else if (tap_valid(header_data, header_size)) {
+		spectrum_player_file_valid = true;
+		spectrum_player_display_ready = true;
+		spectrum_tap_main(); 
+	}
+	else {
+		spectrum_player_display_ready = true;
+	}
+
 	
     xSemaphoreGive(rom_done_sem);
     vTaskDelete(NULL);
@@ -248,6 +287,7 @@ static void tape_task(void *arg)
 void spectrum_player_main()
 {
 	stop_pos = 0;
+	spectrum_player_file_valid = false;
     spectrum_player_process_active = true;
 	spectrum_player_display_ready = false;
 	

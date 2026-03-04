@@ -66,6 +66,28 @@ void graphic_display_loading_screen()
 	display_draw();
 }
 
+void graphic_display_invalid_file_screen(const char *text) 
+{
+	for (int y = DISPLAY_HEIGHT - FOOTER_HEIGHT; y < DISPLAY_HEIGHT; y++) {
+		
+		for (int x = 0; x < DISPLAY_WIDTH; x++) {
+		
+			framebuffer[(y * DISPLAY_WIDTH) + x] = BG_COLOR;
+		}
+		
+	}
+	
+	int pos_x = 4;
+	int pos_y = 30;
+		
+	graphic_display_text(text, pos_y, pos_x, LABEL_COLOR, BG_COLOR);
+	
+	pos_y = pos_y + 20;
+	
+	graphic_display_text("The selected file is invalid.", pos_y, pos_x, LABEL_COLOR, BG_COLOR);
+	
+}
+
 void draw_header(const char *text) {
 	
 	for (int y = 0; y < HEADER_HEIGHT; y++) {

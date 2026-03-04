@@ -741,7 +741,6 @@ static IRAM_ATTR void block_33_hardware_type(void) {
 	
 }
 
-
 static IRAM_ATTR void block_35_custom_info_block(void) {
 	
 	// offset 0x10 - 16
@@ -753,11 +752,9 @@ static IRAM_ATTR void block_35_custom_info_block(void) {
 
 static IRAM_ATTR void play(void) {
 
-	
 	if (spectrum_player_pos == 0) { // skip header
 		spectrum_player_pos = 10;
 	}
-
 
 	while (spectrum_player_pos < file_browser_file_len) {
 		
@@ -917,10 +914,7 @@ static IRAM_ATTR void play(void) {
 	
 }
 
-
 void spectrum_tzx_main() {
-	
-	//printf("spectrum_tzx_main\n");
 	
 	out_level = 0;
 	spectrum_player_buffer_overlap = 32;
@@ -937,9 +931,6 @@ void spectrum_tzx_main() {
 			if (spectrum_player_user_tape_status) {
 				// start tape
 				
-				//printf("START TAPE\n");
-				
-				
 				initial_data(spectrum_player_pos == 0 ? 0 : last_block_pos);
 				
 				spectrum_player_tape_status = true;
@@ -952,8 +943,6 @@ void spectrum_tzx_main() {
 		vTaskDelay(pdMS_TO_TICKS(10));
 
 	}
-	
-	
 	
 }
 

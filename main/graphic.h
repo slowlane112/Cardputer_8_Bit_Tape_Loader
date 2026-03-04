@@ -43,6 +43,7 @@ void draw_header(const char *text);
 void draw_footer(graphic_footer_button_t *btn1, graphic_footer_button_t *btn2, graphic_footer_button_t *btn3);
 void graphic_draw_status_indicator(const char *text, bool status, int x_pos, int y_pos, uint16_t on_color, uint16_t off_color);
 void graphic_draw_progress_bar(size_t pos, size_t total, int x_pos, int y_pos, uint16_t on_color, uint16_t off_color);
+void graphic_display_invalid_file_screen(const char *text);
 
 #endif
 
