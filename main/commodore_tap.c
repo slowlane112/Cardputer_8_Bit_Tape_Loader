@@ -89,7 +89,7 @@ static void stop_tape() {
 static void handle_motor_pause(void)
 {
 	
-    while (!gpio_get_level(COMMODORE_MOTOR_PIN)) {
+    while (commodore_use_motor && !gpio_get_level(COMMODORE_MOTOR_PIN)) {
         if (commodore_player_tape_status && (!commodore_player_user_tape_status || commodore_player_pos >= file_browser_file_len)) {  
 			//STOP while paused - user stopped or reached end
 			stop_tape();
@@ -158,7 +158,7 @@ void commodore_tap_main()
 		
 		ensure_data();
 
-        if (!gpio_get_level(COMMODORE_MOTOR_PIN)) {
+        if (commodore_use_motor && !gpio_get_level(COMMODORE_MOTOR_PIN)) {
             handle_motor_pause();
             continue;
         }

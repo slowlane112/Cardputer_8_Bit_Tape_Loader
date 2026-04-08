@@ -151,6 +151,9 @@ void graphic_draw_status_indicator(const char *text, bool status, int x_pos, int
 	int indicator_width = 16;
 	int indicator_height = 16;
 	
+	// check disabled
+	uint16_t control_color = (on_color == off_color) ? DISABLED_LABEL_COLOR : LABEL_COLOR;
+	
 	for (int y = y_pos; y < y_pos + indicator_height; y++) {
 		
 		for (int x = x_pos; x < x_pos + indicator_width; x++) {
@@ -163,7 +166,7 @@ void graphic_draw_status_indicator(const char *text, bool status, int x_pos, int
 				)
 			{
 				// border
-				framebuffer[(y * DISPLAY_WIDTH) + x] = LABEL_COLOR;
+				framebuffer[(y * DISPLAY_WIDTH) + x] = control_color;
 
 			}
 			else {
@@ -181,7 +184,7 @@ void graphic_draw_status_indicator(const char *text, bool status, int x_pos, int
 		
 	}
 	
-	graphic_display_text(text, y_pos, x_pos + 20, LABEL_COLOR, BG_COLOR);
+	graphic_display_text(text, y_pos, x_pos + 20, control_color, BG_COLOR);
 	
 }
 

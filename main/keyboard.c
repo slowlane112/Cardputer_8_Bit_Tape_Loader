@@ -25,6 +25,7 @@
 #define ADV_NUM_ROWS            8
 #define ADV_NUM_COLS            9
 
+static char last_pressed = '\0';
 static uint8_t adv_key_map_state[ADV_NUM_ROWS][ADV_NUM_COLS] = {{0}};
 static QueueHandle_t adv_key_event_queue = NULL;
 static char adv_key_map[ADV_NUM_ROWS][ADV_NUM_COLS] = {
@@ -165,7 +166,7 @@ static void IRAM_ATTR adv_tca8418_isr_handler(void *arg) {
     }
 }
 
-void adv_keyboard_setup() 
+void adv_keyboard_setup(void) 
 {
     adv_tca8418_write_reg(ADV_REG_CFG, 0x01);       
     adv_tca8418_write_reg(ADV_REG_KP_GPIO1, 0xFF);
@@ -197,13 +198,11 @@ void adv_keyboard_setup()
     gpio_isr_handler_add(ADV_INT_PIN, adv_tca8418_isr_handler, NULL);
 }
 
-void keyboard_setup() {
+void keyboard_init(void) {
 	
 	adv_keyboard_setup();
 	
 }
-
-static char last_pressed = '\0';
 
 static char debounce(char current) {
 	
@@ -216,7 +215,7 @@ static char debounce(char current) {
 	
 }
 
-char keyboard_get_key() {
+char keyboard_get_key(void) {
 	
 	
 	for (int r = 0; r < ADV_NUM_ROWS; r++) {

@@ -152,7 +152,7 @@ static IRAM_ATTR void pulse(uint32_t us) {
 }
 
 static IRAM_ATTR void pause(uint16_t pause_length_ms) {
-    
+
 	if (test_mode == false && spectrum_player_user_tape_status) {
 		flip();
 		esp_rom_delay_us(1000);

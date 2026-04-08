@@ -16,6 +16,7 @@
 #include "msx_cas.h"
 #include "file_browser.h"
 #include "tape_buffer.h"
+#include "nvs.h"
 
 volatile bool msx_player_file_valid = false;
 volatile uint8_t msx_player_data_tracker = 0;
@@ -28,8 +29,18 @@ volatile bool msx_player_user_tape_status = false;
 volatile bool msx_player_tape_status = false; // playing / stopped
 static uint8_t processed_data_tracker = 0;
 static size_t stop_pos = 0;
+volatile bool msx_use_remote = true;
 static volatile int msx_data_type = 0;
 static SemaphoreHandle_t rom_done_sem = NULL;
+
+static void load_msx_use_remote() {
+	uint8_t use_remote = nvs_get_value("mx_use_remote", 1);
+    msx_use_remote = use_remote > 0;
+}
+
+static void save_msx_use_remote() {
+	nvs_set_value("mx_use_remote", msx_use_remote ? 1 : 0);
+}
 
 static const uint8_t MAGIC_ID[8] = {
     0x1F, 0xA6, 0xDE, 0xBA, 0xCC, 0x13, 0x7D, 0x74
@@ -130,7 +141,13 @@ static void display_progress(void) {
 		pos_y = 24;
 		pos_x = 162;
 		
-		graphic_draw_status_indicator("Remote", !gpio_get_level(REMOTE_PIN), pos_x, pos_y, INDICATOR_MOTOR_COLOR, INDICATOR_OFF_COLOR);
+		
+		if (msx_use_remote) {
+			graphic_draw_status_indicator("Remote", !gpio_get_level(REMOTE_PIN), pos_x, pos_y, INDICATOR_MOTOR_COLOR, INDICATOR_OFF_COLOR);
+		}
+		else {
+			graphic_draw_status_indicator("Remote", false, pos_x, pos_y, INDICATOR_OFF_COLOR, INDICATOR_OFF_COLOR);
+		}
 		
 		pos_y = pos_y + 24;
 		
@@ -181,6 +198,12 @@ static void display_progress(void) {
 	
 }
 
+static void use_remote(void)
+{
+	msx_use_remote = !msx_use_remote;
+	save_msx_use_remote();
+}
+
 static void process_keyboard(void)
 {
 	
@@ -210,6 +233,11 @@ static void process_keyboard(void)
 		else if (key == 0x87) { // Exit
 			if (msx_player_tape_status == false) { // tape stopped
 				msx_player_process_active = false; // exit tape
+			}
+		}
+		else if (key == 'R') { // Use Remote
+			if (msx_player_tape_status == false) { // tape stopped
+				use_remote();
 			}
 		}
 	
@@ -275,6 +303,8 @@ void msx_player_main()
 	msx_player_file_valid = false;
     msx_player_process_active = true;
     msx_player_display_ready = false;
+    
+    load_msx_use_remote();
     
     if (rom_done_sem == NULL)
         rom_done_sem = xSemaphoreCreateCounting(2, 0);

@@ -16,6 +16,7 @@
 #include "commodore_tap.h"
 #include "config.h"
 #include "tape_buffer.h"
+#include "nvs.h"
 
 /*
 Not playing: SENSE = OPEN - DATA = HIGH
@@ -34,6 +35,7 @@ volatile bool commodore_player_process_active = false; // tape_loaded
 volatile bool commodore_player_user_tape_status = false;
 static uint8_t processed_data_tracker = 0;
 static size_t stop_pos = 0;
+volatile bool commodore_use_motor = true;
 static SemaphoreHandle_t rom_done_sem = NULL;
 volatile int8_t commodore_player_system = 0;
 volatile int8_t commodore_player_format = 0;
@@ -46,6 +48,15 @@ typedef struct {
 	uint8_t  	unused;
 	uint32_t	data_size;
 } tap_header_t;
+
+static void load_commodore_use_motor() {
+	uint8_t use_motor = nvs_get_value("cm_use_motor", 1);
+    commodore_use_motor = use_motor > 0;
+}
+
+static void save_commodore_use_motor() {
+	nvs_set_value("cm_use_motor", commodore_use_motor ? 1 : 0);
+}
 
 static bool has_data_activity() {
 	
@@ -100,8 +111,12 @@ void display_progress(void) {
 		pos_y = 24;
 		pos_x = 170;
 		
-		graphic_draw_status_indicator("Motor", gpio_get_level(COMMODORE_MOTOR_PIN), pos_x, pos_y, INDICATOR_MOTOR_COLOR, INDICATOR_OFF_COLOR);
-		
+		if (commodore_use_motor) {
+			graphic_draw_status_indicator("Motor", gpio_get_level(COMMODORE_MOTOR_PIN), pos_x, pos_y, INDICATOR_MOTOR_COLOR, INDICATOR_OFF_COLOR);
+		}
+		else {
+			graphic_draw_status_indicator("Motor", false, pos_x, pos_y, INDICATOR_OFF_COLOR, INDICATOR_OFF_COLOR);
+		}
 		
 		pos_y = pos_y + 24;
 		
@@ -153,6 +168,12 @@ void display_progress(void) {
 	
 }
 
+static void use_motor(void)
+{
+	commodore_use_motor = !commodore_use_motor;
+	save_commodore_use_motor();
+}
+
 static void process_keyboard(void)
 {
 	
@@ -182,6 +203,11 @@ static void process_keyboard(void)
 		else if (key == 0x87) { // Exit
 			if (commodore_player_tape_status == false) { // tape stopped
 				commodore_player_process_active = false; // exit tape
+			}
+		}
+		else if (key == 'M') { // Use Motor
+			if (commodore_player_tape_status == false) { // tape stopped
+				use_motor();
 			}
 		}
 	}
@@ -245,6 +271,8 @@ void commodore_player_main()
 	stop_pos = 0;
 	commodore_player_process_active = true;
 	commodore_player_display_ready = false;
+	
+	load_commodore_use_motor();
 	
 	if (rom_done_sem == NULL) { 
 		rom_done_sem = xSemaphoreCreateCounting(2, 0); 

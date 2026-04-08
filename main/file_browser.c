@@ -13,6 +13,7 @@
 #include "commodore_player.h"
 #include "spectrum_player.h"
 #include "msx_player.h"
+#include "acorn_player.h"
 #include "display.h"
 #include "graphic.h"
 #include "file.h"
@@ -183,6 +184,9 @@ static void button_load(void)
 			}
 			else if (system_selected_index == 2) {
 				msx_player_main();
+			}
+			else if (system_selected_index == 3) {
+				acorn_player_main();
 			}
 		
 		}

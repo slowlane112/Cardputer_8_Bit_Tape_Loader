@@ -14,6 +14,7 @@ extern volatile size_t commodore_player_buffer_overlap;
 extern volatile bool commodore_player_process_active;
 extern volatile bool commodore_player_user_tape_status;
 extern volatile size_t commodore_player_pos;
+extern volatile bool commodore_use_motor;
 extern volatile int8_t commodore_player_system;
 extern volatile int8_t commodore_player_format;
 

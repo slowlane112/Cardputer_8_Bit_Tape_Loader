@@ -11,7 +11,7 @@
 #include "keyboard.h"
 #include "sdcard.h"
 #include "system.h"
-#include "nvs_flash.h"
+#include "nvs.h"
 
 //(Top) → Component config → FreeRTOS → Kernel - (1000) configTICK_RATE_HZ
 //(Top) → Component config → ESP System Settings - CPU frequency (240 MHz)
@@ -23,15 +23,9 @@ void app_main(void)
 	config_init();
 	display_init();
 	i2c_init();
-    keyboard_setup();
+    keyboard_init();
     sdcard_init();
-    
-	esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        printf("NVS Error\n");
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        ESP_ERROR_CHECK(nvs_flash_init());
-    }
+    nvs_init();
 	
     system_main();
 

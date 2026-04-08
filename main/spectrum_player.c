@@ -15,7 +15,7 @@
 #include "spectrum_tzx.h"
 #include "file_browser.h"
 #include "tape_buffer.h"
-#include "nvs_flash.h"
+#include "nvs.h"
 
 volatile bool spectrum_player_file_valid = false;
 volatile uint8_t spectrum_player_data_tracker = 0;
@@ -38,23 +38,14 @@ const char *spectrum_system_types[] = {
 const int spectrum_player_system_types_count = sizeof(spectrum_system_types) / sizeof(spectrum_system_types[0]);
 
 static void load_spectrum_system_type() {
-	uint8_t system_type = 0;
-    nvs_handle_t nvs_handle;
-    ESP_ERROR_CHECK(nvs_open("tape_player", NVS_READWRITE, &nvs_handle));
-    nvs_get_u8(nvs_handle, "sp_system_type", &system_type);
-    nvs_close(nvs_handle);
-
+	uint8_t system_type = nvs_get_value("sp_system_type", 0);
     if (system_type < spectrum_player_system_types_count) {
         spectrum_player_system_type = system_type;
     }
 }
 
 static void save_spectrum_system_type() {
-	nvs_handle_t nvs_handle;
-    ESP_ERROR_CHECK(nvs_open("tape_player", NVS_READWRITE, &nvs_handle));
-    ESP_ERROR_CHECK(nvs_set_u8(nvs_handle, "sp_system_type", spectrum_player_system_type));
-    ESP_ERROR_CHECK(nvs_commit(nvs_handle));
-    nvs_close(nvs_handle);
+	nvs_set_value("sp_system_type", spectrum_player_system_type);
 }
 
 static bool has_data_activity() {

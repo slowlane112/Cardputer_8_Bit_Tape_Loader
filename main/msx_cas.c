@@ -101,7 +101,7 @@ static void play(void) {
 			
 			esp_rom_delay_us(500000);
 			
-			while (gpio_get_level(REMOTE_PIN) == 1) {
+			while (msx_use_remote && gpio_get_level(REMOTE_PIN) == 1) {
 				if (!msx_player_user_tape_status) {
 					break;
 				}

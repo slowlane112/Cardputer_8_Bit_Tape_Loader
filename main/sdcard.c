@@ -36,6 +36,10 @@ void sdcard_system_init(void) {
     } else if (system_selected_index == 2) {
         allow_extension[0] = ".cas";
 		allow_extension_count = 1;
+	} else if (system_selected_index == 3) {
+        allow_extension[0] = ".uef";
+        allow_extension[1] = ".hq";
+		allow_extension_count = 2;
     }
 }
 

@@ -14,6 +14,7 @@ extern volatile size_t msx_player_pos;
 extern volatile bool msx_player_process_active;
 extern volatile bool msx_player_tape_status; // playing / stopped
 extern volatile bool msx_player_user_tape_status;
+extern volatile bool msx_use_remote;
 void msx_player_main();
 
 #endif

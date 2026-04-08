@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
  
-#ifndef KEYBOARD_H
-#define KEYBOARD_H
+#ifndef ACORN_UEF_H
+#define ACORN_UEF_H
 
-void keyboard_init(void);
-char keyboard_get_key(void);
+void acorn_uef_main();
 
 #endif
+

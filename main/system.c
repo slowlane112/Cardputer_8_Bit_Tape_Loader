@@ -17,7 +17,8 @@ static bool update_display = false;
 const char *systems[] = {
     "Commodore",
     "ZX Spectrum",
-    "MSX"
+    "MSX",
+    "Acorn / BBC Micro"
 };
 
 const int systems_count = sizeof(systems) / sizeof(systems[0]);
@@ -44,7 +45,7 @@ static void display_screen(void) {
 	
 	draw_header("8-Bit Tape Loader");
 	
-	int pos_y = 40;
+	int pos_y = 30;
 	int pos_x_ = 4;
 	
 	char item_name[40];
@@ -55,7 +56,7 @@ static void display_screen(void) {
 	
 		graphic_display_text(item_name, pos_y, pos_x_, LABEL_COLOR, BG_COLOR);
 		
-		pos_y = pos_y + 26;
+		pos_y = pos_y + 22;
     }
 	
 	display_draw();
