@@ -1,6 +1,6 @@
 # Cardputer 8-Bit Tape Loader
 
-Load Commodore, ZX Spectrum and MSX tape files using a Cardputer Adv.
+Load Commodore, ZX Spectrum and MSX, Acorn and BBC Micro tape files using a Cardputer Adv.
 
 This project is a work in progress. I assume no responsibility or liability for any errors, omissions, or outcomes resulting from the use of the information provided within this project.
 
