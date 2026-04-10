@@ -43,3 +43,10 @@ Supports uef and hq files.<br />
 Press R to enable/disable remote control.<br />
 
 <br />Make sure uef files are uncompressed. Some uef files are gzip‑compressed and will need to be decompressed using a tool like gzip.<br />
+
+## Installation<br />
+Download the .bin file from the releases page.<br />
+Flash the image with esptool: (you might need to specify the --port argument if esptool can't detect your Cardputer)<br />
+```
+esptool.py --chip esp32s3 write_flash 0x0 Cardputer_8_Bit_Tape_Loader_*.bin
+```
