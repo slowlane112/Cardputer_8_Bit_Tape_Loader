@@ -50,3 +50,39 @@ Flash the image with esptool: (you might need to specify the --port argument if 
 ```
 esptool.py --chip esp32s3 write_flash 0x0 Cardputer_8_Bit_Tape_Loader_*.bin
 ```
+## Tape Loader Module<br />
+
+<table>
+<tr>
+<td><img src="assets/module_2.jpg" alt="Module" width="300"></td>
+<td><img src="assets/module_1.jpg" alt="Module" width="300"></td>
+</tr>
+</table>
+
+### Parts<br />
+
+<img src="assets/module_parts.jpg" alt="board" width="500"><br />
+<ul>
+<li>2.54mm Male Pin Header</li>
+<li>3.5mm Audio Socket</li>
+<li>2.5mm Mono Socket</li>
+<li>6 Pin Mini DIN Female Socket</li>
+</ul>
+
+### Board<br />
+
+Use a perfboard with 2.54 mm pitch, arranged in a 23 by 6 hole grid.
+<br />Place the components on the top side of the board so the module bottom panel can sit flush against the underside of the board.
+<br />Drill holes to accommodate 2mm screws.
+
+<img src="assets/module_board.jpg" alt="board" width="600">
+
+### Commodore Cable<br />
+
+<img src="assets/commodore_parts.jpg" alt="board" width="400"><br />
+You can make a cable using a male 6 pin mini DIN plug and 12 pin edge connector with 3.96mm Pitch.<br />
+
+
+### 3D Files<br />
+
+View 3D files: [8-Bit Tape Loader 3D Files](../assets/3d_files/)
