@@ -85,4 +85,4 @@ You can make a cable using a male 6 pin mini DIN plug and 12 pin edge connector 
 
 ### 3D Files<br />
 
-View 3D files: [8-Bit Tape Loader 3D Files](../assets/3d_files/)
+View 3D files: [8-Bit Tape Loader 3D Files](/assets/3d_files/)
