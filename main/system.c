@@ -9,6 +9,7 @@
 #include "display.h"
 #include "graphic.h"
 #include "file_browser.h"
+#include "state.h"
 
 static bool system_process = false;
 static int selected_item = 0;
@@ -43,7 +44,7 @@ static void display_screen(void) {
 		}
 	}
 	
-	draw_header("8-Bit Tape Loader");
+	draw_header("8-Bit Tape Loader      v1.0.1");
 	
 	int pos_y = 30;
 	int pos_x_ = 4;
@@ -97,6 +98,30 @@ static void button_item_up(void)
 
 }
 
+static void button_item_skip_start(void)
+{
+	if (systems_count > 0) {
+		
+		selected_item = 0;
+	
+		update_display = true;
+	
+	}
+
+}
+
+static void button_item_skip_end(void)
+{
+	if (systems_count > 0) {
+		
+		selected_item = systems_count - 1;
+	
+		update_display = true;
+	
+	}
+
+}
+
 static void process_keyboard(void)
 {
 	
@@ -108,13 +133,17 @@ static void process_keyboard(void)
     else if (key == ';') {
 		button_item_down();
 	}
-	 else if (key == '.') {
+	else if (key == '.') {
 		button_item_up();
 	}
+	else if (key == '`') {
+		button_item_skip_start();
+	}
+	else if (key == 0x80) { // Ctrl
+		button_item_skip_end();
+	}	
     
 }
-
-
 
 void system_main(void) {
 	
@@ -130,8 +159,7 @@ void system_main(void) {
 		vTaskDelay(pdMS_TO_TICKS(10));
 	}
 	
-	
 	system_selected_index = selected_item;
-	file_browser_main();
+	state = STATE_FILE_BROWSER;
 	
 }

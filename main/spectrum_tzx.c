@@ -8,7 +8,6 @@
 #include "spectrum_player.h"
 #include "config.h"
 #include "freertos/FreeRTOS.h"
-#include "driver/gpio.h"
 #include "soc/gpio_struct.h"
 #include "file_browser.h"
 #include "tape_buffer.h"

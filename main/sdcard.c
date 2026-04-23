@@ -142,18 +142,31 @@ static bool has_allowed_extension(const char *filename)
     return false;
 }
 
+void sdcard_list_free(sdcard_list_t *list)
+{
+    if (!list || !list->entries) return;
+
+    for (size_t i = 0; i < list->count; i++) {
+        free(list->entries[i].name);
+    }
+
+    free(list->entries);
+    list->entries = NULL;
+    list->count = 0;
+}
+
 sdcard_list_t sdcard_list_dir(const char *path)
 {
     sdcard_list_t list = {0};
-    
+
     if (sdcard == NULL || sdmmc_get_status(sdcard) != ESP_OK) {
         ESP_LOGE("SDCARD", "Card is missing or unresponsive (0x107 logic)");
         list.status = SD_ERR_TIMEOUT; 
         return list;
     }
-    
+
     list.status = SD_OK;
-    
+
     DIR *dir = opendir(path);
     if (!dir) {
         ESP_LOGE("SDCARD", "Failed to open directory: %s", path);
@@ -161,45 +174,59 @@ sdcard_list_t sdcard_list_dir(const char *path)
         return list;
     }
 
+    size_t capacity = 64;
+    list.entries = malloc(capacity * sizeof(sdcard_entry_t));
+    if (!list.entries) {
+        ESP_LOGE("SDCARD", "Out of memory (initial alloc)");
+        list.status = SD_ERR_NO_MEM;
+        closedir(dir);
+        return list;
+    }
+
     struct dirent *entry;
 
     while ((entry = readdir(dir)) != NULL) {
-        // Skip hidden entries
+        
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
             continue;
         }
 
         bool is_dir = (entry->d_type == DT_DIR);
         bool allowed_file = false;
-        
-        // Check for .tap extension if it's not a directory
+
         if (!is_dir) {
-			allowed_file = has_allowed_extension(entry->d_name);
-			
+            allowed_file = has_allowed_extension(entry->d_name);
         }
-        
+
         if (is_dir || allowed_file) {
-			// 1. Try to resize the array
-			sdcard_entry_t *new_entries = realloc(list.entries, (list.count + 1) * sizeof(sdcard_entry_t));
-			if (!new_entries) {
-				ESP_LOGE("SDCARD", "Out of memory (array)");
-				list.status = SD_ERR_NO_MEM;
-				goto memory_error; // Exit and clean up everything
-			}
-			list.entries = new_entries;
 
-			// 2. Try to copy the filename
-			sdcard_entry_t *e = &list.entries[list.count];
-			e->name = strdup(entry->d_name);
-			if (!e->name) {
-				ESP_LOGE("SDCARD", "Out of memory (string)");
-				list.status = SD_ERR_NO_MEM;
-				goto memory_error; // Exit and clean up everything
-			}
+            if (list.count == capacity) {
+                size_t new_capacity = capacity * 2;
+                sdcard_entry_t *new_entries =
+                    realloc(list.entries, new_capacity * sizeof(sdcard_entry_t));
 
-			e->type = is_dir ? SDCARD_DIR : SDCARD_FILE;
-			list.count++;
-		}
+                if (!new_entries) {
+                    ESP_LOGE("SDCARD", "Out of memory (array grow)");
+                    list.status = SD_ERR_NO_MEM;
+                    goto memory_error;
+                }
+
+                list.entries = new_entries;
+                capacity = new_capacity;
+            }
+
+            // Copy filename
+            sdcard_entry_t *e = &list.entries[list.count];
+            e->name = strdup(entry->d_name);
+            if (!e->name) {
+                ESP_LOGE("SDCARD", "Out of memory (string)");
+                list.status = SD_ERR_NO_MEM;
+                goto memory_error;
+            }
+
+            e->type = is_dir ? SDCARD_DIR : SDCARD_FILE;
+            list.count++;
+        }
     }
 
     closedir(dir);
@@ -209,18 +236,16 @@ sdcard_list_t sdcard_list_dir(const char *path)
     }
 
     return list;
-    
-    memory_error:
-		if (dir) closedir(dir);
-		// Free everything we allocated so far to prevent a "Memory Leak"
-		for (size_t i = 0; i < list.count; i++) {
-			free(list.entries[i].name);
-		}
-		free(list.entries);
-		list.entries = NULL;
-		list.count = 0;
-		// list.status is already set to SD_ERR_NO_MEM
-		return list;
+
+memory_error:
+    closedir(dir);
+    for (size_t i = 0; i < list.count; i++) {
+        free(list.entries[i].name);
+    }
+    free(list.entries);
+    list.entries = NULL;
+    list.count = 0;
+    return list;
 }
 
 FILE *sd_open(const char *path, size_t *out_len)

@@ -16,9 +16,17 @@ All tape files must be uncompressed tape images.<br />
 ### File Browser<br />
 Arrow Up: Move up<br />
 Arrow Down: Move down<br />
+Arrow Left: Move to previous page<br />
+Arrow Right: Move to next page<br />
 Enter: Select<br />
 Backspace: Back<br />
 Letter: Move to next directory or file beginning with that letter.<br />
+
+#### Hotkeys<br />
+Esc: Move to first item<br />
+Tab: Move up 20 items<br />
+Fn: Move down 20 items<br />
+Ctrl: Move to last item<br />
 
 ### Tape Player<br />
 1: Play<br />
@@ -46,10 +54,19 @@ Press R to enable/disable remote control.<br />
 
 ## Installation<br />
 Download the .bin file from the releases page.<br />
-Flash the image with esptool: (you might need to specify the --port argument if esptool can't detect your Cardputer)<br />
+Flash the image with esptool: <a href="https://github.com/espressif/esptool/releases" target="_blank">https://github.com/espressif/esptool/releases</a><br />
+You might need to specify the --port argument if esptool can't detect your Cardputer.<br />
+
+### Windows<br />
 ```
-esptool.py --chip esp32s3 write_flash 0x0 Cardputer_8_Bit_Tape_Loader_*.bin
+esptool.exe --chip esp32s3 write_flash 0x0 "Cardputer_8_Bit_Tape_Loader_*.bin"
 ```
+
+### Linux<br />
+```
+./esptool --chip esp32s3 write_flash 0x0 Cardputer_8_Bit_Tape_Loader_*.bin
+```
+
 ## Tape Loader Module<br />
 
 <table>

@@ -36,6 +36,7 @@ typedef struct {
 void sdcard_init(void);
 void sdcard_deinit(void);
 void sdcard_system_init(void);
+void sdcard_list_free(sdcard_list_t *list);
 sdcard_list_t sdcard_list_dir(const char *path);
 FILE *sd_open(const char *path, size_t *out_len);
 size_t sd_read_chunk(FILE *f, size_t file_len, size_t pos, uint8_t *buf, size_t chunk_size);

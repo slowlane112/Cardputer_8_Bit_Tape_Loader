@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
  
-#include "freertos/FreeRTOS.h"
 #include "driver/i2c.h"
 
 #define ADV_I2C_PORT            I2C_NUM_0

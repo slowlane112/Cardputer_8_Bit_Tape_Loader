@@ -82,7 +82,7 @@ void graphic_display_invalid_file_screen(const char *text)
 		
 	graphic_display_text(text, pos_y, pos_x, LABEL_COLOR, BG_COLOR);
 	
-	pos_y = pos_y + 20;
+	pos_y = pos_y + 30;
 	
 	graphic_display_text("The selected file is invalid.", pos_y, pos_x, LABEL_COLOR, BG_COLOR);
 	

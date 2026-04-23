@@ -12,6 +12,12 @@
 #include "sdcard.h"
 #include "system.h"
 #include "nvs.h"
+#include "state.h"
+#include "file_browser.h"
+#include "commodore_player.h"
+#include "spectrum_player.h"
+#include "msx_player.h"
+#include "acorn_player.h"
 
 //(Top) → Component config → FreeRTOS → Kernel - (1000) configTICK_RATE_HZ
 //(Top) → Component config → ESP System Settings - CPU frequency (240 MHz)
@@ -26,9 +32,18 @@ void app_main(void)
     keyboard_init();
     sdcard_init();
     nvs_init();
+    
+    state = STATE_SYSTEM;
 	
-    system_main();
+    for (;;) {
+		switch (state) {
+			case STATE_SYSTEM:    			system_main();           	break;
+			case STATE_FILE_BROWSER:   	 	file_browser_main();     	break;
+			case STATE_PLAYER_COMMODORE: 	commodore_player_main(); 	break;
+			case STATE_PLAYER_SPECTRUM: 	spectrum_player_main();  	break;
+			case STATE_PLAYER_MSX: 			msx_player_main();  		break;
+			case STATE_PLAYER_ACORN: 		acorn_player_main();  		break;									
+		}
+	}
 
 }
-
-

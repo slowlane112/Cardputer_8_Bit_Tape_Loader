@@ -16,6 +16,7 @@
 #include "file_browser.h"
 #include "tape_buffer.h"
 #include "nvs.h"
+#include "state.h"
 
 volatile bool spectrum_player_file_valid = false;
 volatile uint8_t spectrum_player_data_tracker = 0;
@@ -293,6 +294,6 @@ void spectrum_player_main()
     xSemaphoreTake(rom_done_sem, portMAX_DELAY);
     xSemaphoreTake(rom_done_sem, portMAX_DELAY);
     
-    file_browser_main();
+	state = STATE_FILE_BROWSER;
 
 }

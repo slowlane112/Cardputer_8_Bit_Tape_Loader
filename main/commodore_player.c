@@ -17,6 +17,7 @@
 #include "config.h"
 #include "tape_buffer.h"
 #include "nvs.h"
+#include "state.h"
 
 /*
 Not playing: SENSE = OPEN - DATA = HIGH
@@ -284,8 +285,7 @@ void commodore_player_main()
     xSemaphoreTake(rom_done_sem, portMAX_DELAY); 
     xSemaphoreTake(rom_done_sem, portMAX_DELAY);
     
-    file_browser_main();
+    state = STATE_FILE_BROWSER;
 }
-
 
 

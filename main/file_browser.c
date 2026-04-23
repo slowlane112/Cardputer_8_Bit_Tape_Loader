@@ -10,13 +10,10 @@
 #include "system.h"
 #include "keyboard.h"
 #include "sdcard.h"
-#include "commodore_player.h"
-#include "spectrum_player.h"
-#include "msx_player.h"
-#include "acorn_player.h"
 #include "display.h"
 #include "graphic.h"
 #include "file.h"
+#include "state.h"
 
 FILE *file_browser_file = NULL;
 size_t file_browser_file_len = 0;
@@ -28,8 +25,8 @@ static char previous_item[256];
 static char selected_file_path[2200]; 
 static bool file_browser_process = false;
 static bool update_display = false;
-static int exit_mode = 0;
 static sdcard_result_t sdcard_status = 0;
+static int items_per_page = 6;
 
 static int get_selected_item() {
 	
@@ -54,8 +51,7 @@ static void display_screen(void) {
 	
 	if (sdcard_status == SD_OK) {
 	
-		int items_per_page = 6;
-		int current_page = (int)(selected_item / (float)items_per_page);
+		int current_page = selected_item / items_per_page;
 		
 		int item_start = current_page * items_per_page;
 		int item_end = item_start + items_per_page;
@@ -91,7 +87,10 @@ static void display_screen(void) {
 	
 	}
 	else {
-		graphic_display_text("error", 40, 4, LABEL_COLOR, BG_COLOR);
+		graphic_display_text("SD Card Error", 30, 4, LABEL_COLOR, BG_COLOR);
+		graphic_display_text("Can't Read SD Card.", 60, 4, LABEL_COLOR, BG_COLOR);
+		graphic_display_text("Please insert an SD card", 80, 4, LABEL_COLOR, BG_COLOR);
+		graphic_display_text("and reset device.", 100, 4, LABEL_COLOR, BG_COLOR);
 	}
 	
 	display_draw();
@@ -100,7 +99,8 @@ static void display_screen(void) {
 
 static void get_files(const char *directory)
 {
-	
+
+	sdcard_list_free(&items);
 	items = sdcard_list_dir(directory);
 	sdcard_status = items.status;
 	
@@ -157,41 +157,47 @@ static void get_previous_item(const char *path, char *out, size_t out_size) {
 static void button_load(void)
 {
 
-	if (items.entries[selected_item].type == SDCARD_DIR) {
-		append_dir(items.entries[selected_item].name);
-		get_files(current_dir);
-	}
-	else {
-
-		// selected file
-		snprintf(selected_file_path, sizeof(selected_file_path), "%s/%s", current_dir, items.entries[selected_item].name);
+	if (items.count > 0) {
 		
-		file_browser_file = sd_open(selected_file_path, &file_browser_file_len);
-		
-		if (file_browser_file == NULL) {
-			sdcard_status = SD_ERR_FILE_OPEN;
-			update_display = true;
+		if (items.entries[selected_item].type == SDCARD_DIR) {
+			append_dir(items.entries[selected_item].name);
+			get_files(current_dir);
 		}
 		else {
-		
-			file_browser_file_name = items.entries[selected_item].name;
+
+			// selected file
+			snprintf(selected_file_path, sizeof(selected_file_path), "%s/%s", current_dir, items.entries[selected_item].name);
 			
-			if (system_selected_index == 0) {
-				commodore_player_main();
+			file_browser_file = sd_open(selected_file_path, &file_browser_file_len);
+			
+			if (file_browser_file == NULL) {
+				sdcard_status = SD_ERR_FILE_OPEN;
+				update_display = true;
 			}
-			else if (system_selected_index == 1) {
-				spectrum_player_main();
+			else {
+			
+				file_browser_file_name = items.entries[selected_item].name;
+				
+				if (system_selected_index == 0) {
+					state = STATE_PLAYER_COMMODORE;
+				}
+				else if (system_selected_index == 1) {
+					state = STATE_PLAYER_SPECTRUM;
+				}
+				else if (system_selected_index == 2) {
+					state = STATE_PLAYER_MSX;
+				}
+				else if (system_selected_index == 3) {
+					state = STATE_PLAYER_ACORN;
+				}
+				
+				file_browser_process = false;
+				
 			}
-			else if (system_selected_index == 2) {
-				msx_player_main();
-			}
-			else if (system_selected_index == 3) {
-				acorn_player_main();
-			}
-		
+			
 		}
-		
 	}
+	
 }
 
 static void button_item_down(void)
@@ -221,6 +227,105 @@ static void button_item_up(void)
 	}
 }
 
+static void button_item_page_down(void)
+{
+	if (items.count > 0) {
+		
+		int current_page = (int)(selected_item / (float)items_per_page);
+		int new_page = current_page - 1;
+		
+		if (new_page < 0) {
+			new_page = 0;
+		}
+		
+		selected_item = new_page * items_per_page;
+	
+		update_display = true;
+	
+	}
+
+}
+
+static void button_item_page_up(void)
+{
+	if (items.count > 0) {
+		
+		int total_pages = (items.count + items_per_page - 1) / items_per_page;
+		int current_page = (int)(selected_item / (float)items_per_page);
+		int new_page = current_page + 1;
+		
+		if (new_page > total_pages - 1) {
+			new_page = total_pages - 1;
+		}
+		
+		selected_item = new_page * items_per_page;
+		
+		update_display = true;
+
+	}
+
+}
+
+static void button_item_skip_down(void)
+{
+	if (items.count > 0) {
+		
+		int new_selected_item = selected_item - 20;
+		
+		if (new_selected_item < 0) {
+			new_selected_item = 0;
+		}
+		
+		selected_item = new_selected_item;
+	
+		update_display = true;
+	
+	}
+
+}
+
+static void button_item_skip_up(void)
+{
+	if (items.count > 0) {
+		
+		int new_selected_item = selected_item + 20;
+		
+		if (new_selected_item > items.count - 1) {
+			new_selected_item = items.count - 1;
+		}
+		
+		selected_item = new_selected_item;
+	
+		update_display = true;
+	
+	}
+
+}
+
+static void button_item_skip_start(void)
+{
+	if (items.count > 0) {
+		
+		selected_item = 0;
+	
+		update_display = true;
+	
+	}
+
+}
+
+static void button_item_skip_end(void)
+{
+	if (items.count > 0) {
+		
+		selected_item = items.count - 1;
+	
+		update_display = true;
+	
+	}
+
+}
+
 static void button_back(void) {
 	
 	if (sdcard_status == SD_ERR_FILE_OPEN) {
@@ -230,7 +335,7 @@ static void button_back(void) {
 	}
 	else if (sdcard_status != SD_OK || strcmp(current_dir, "/sdcard") == 0) {
 		// root or sd card error, go back to main screen
-		exit_mode = 1;
+		state = STATE_SYSTEM;
 		file_browser_process = false;
 	}
 	else {
@@ -282,6 +387,24 @@ static void process_keyboard(void)
 	 else if (key == '.') {
 		button_item_up();
 	}
+	else if (key == ',') {
+		button_item_page_down();
+	}
+	else if (key == '/') {
+		button_item_page_up();
+	}	
+	else if (key == 0x88) { // tab
+		button_item_skip_down();
+	}
+	else if (key == 0x85) { // fn
+		button_item_skip_up();
+	}
+	else if (key == '`') {
+		button_item_skip_start();
+	}
+	else if (key == 0x80) { // Ctrl
+		button_item_skip_end();
+	}		
     else if (key == 0x87) {
 		button_back();
 	}
@@ -305,7 +428,6 @@ void file_browser_main(void) {
 
 	get_files(current_dir);
 	
-	exit_mode = 0;
 	file_browser_process = true;
 	
 	while (file_browser_process) {
@@ -316,10 +438,6 @@ void file_browser_main(void) {
 		}
 		vTaskDelay(pdMS_TO_TICKS(10));
 		
-	}
-	
-	if (exit_mode == 1) {
-		system_main();
 	}
 		
 }

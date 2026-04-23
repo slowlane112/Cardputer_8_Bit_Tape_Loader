@@ -4,10 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <stdint.h>
 #include <stddef.h>
-#include <string.h>
-#include <ctype.h> 
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -21,6 +18,7 @@
 #include "file_browser.h"
 #include "tape_buffer.h"
 #include "nvs.h"
+#include "state.h"
 
 typedef enum {
     LOAD_CHAIN,
@@ -295,6 +293,6 @@ void acorn_player_main()
     xSemaphoreTake(rom_done_sem, portMAX_DELAY);
     xSemaphoreTake(rom_done_sem, portMAX_DELAY);
     
-    file_browser_main();
+	state = STATE_FILE_BROWSER;
     
 }
