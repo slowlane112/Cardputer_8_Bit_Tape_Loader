@@ -40,7 +40,13 @@ void sdcard_system_init(void) {
         allow_extension[0] = ".uef";
         allow_extension[1] = ".hq";
 		allow_extension_count = 2;
-    }
+    } else if (system_selected_index == 4) {
+        allow_extension[0] = ".cas";
+		allow_extension_count = 1;
+    } else if (system_selected_index == 5) {
+        allow_extension[0] = ".tap";
+		allow_extension_count = 1;		
+	}
 }
 
 void sdcard_init(void)

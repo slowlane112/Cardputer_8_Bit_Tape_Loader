@@ -108,11 +108,11 @@ static void display_progress(void) {
 		
 		char buf_command[32];
 		if (acorn_load_method == LOAD_CHAIN) {
-			sprintf(buf_command, "*CHAIN\"\"");
+			sprintf(buf_command, "CHAIN\"\"");
 		} else if  (acorn_load_method == LOAD_RUN) {
-			sprintf(buf_command, "*RUN");
+			sprintf(buf_command, "RUN");
 		} else {
-			sprintf(buf_command, "*CHAIN\"\" or *RUN");
+			sprintf(buf_command, "CHAIN\"\" or RUN");
 		}
 		
 		graphic_display_text(buf_command, pos_y, pos_x, LABEL_COLOR, BG_COLOR);
@@ -168,7 +168,7 @@ static void display_progress(void) {
 	}
 	else {
 		
-		graphic_display_invalid_file_screen("MSX");
+		graphic_display_invalid_file_screen("Acorn / BBC Micro");
 	}
 	
 	

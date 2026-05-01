@@ -190,6 +190,12 @@ static void button_load(void)
 				else if (system_selected_index == 3) {
 					state = STATE_PLAYER_ACORN;
 				}
+				else if (system_selected_index == 4) {
+					state = STATE_PLAYER_DRAGON;
+				}
+				else if (system_selected_index == 5) {
+					state = STATE_PLAYER_ORIC;
+				}				
 				
 				file_browser_process = false;
 				

@@ -19,7 +19,9 @@ const char *systems[] = {
     "Commodore",
     "ZX Spectrum",
     "MSX",
-    "Acorn / BBC Micro"
+    "Acorn / BBC Micro",
+    "Dragon / Tandy CoCo",
+    "Oric",    
 };
 
 const int systems_count = sizeof(systems) / sizeof(systems[0]);
@@ -44,9 +46,9 @@ static void display_screen(void) {
 		}
 	}
 	
-	draw_header("8-Bit Tape Loader      v1.0.1");
+	draw_header("8-Bit Tape Loader      v1.1.0");
 	
-	int pos_y = 30;
+	int pos_y = 22;
 	int pos_x_ = 4;
 	
 	char item_name[40];
@@ -57,7 +59,7 @@ static void display_screen(void) {
 	
 		graphic_display_text(item_name, pos_y, pos_x_, LABEL_COLOR, BG_COLOR);
 		
-		pos_y = pos_y + 22;
+		pos_y = pos_y + 19;
     }
 	
 	display_draw();

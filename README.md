@@ -1,6 +1,9 @@
 # Cardputer 8-Bit Tape Loader
 
-Load Commodore, ZX Spectrum, MSX, Acorn and BBC Micro tape files using a Cardputer Adv.
+Load 8-bit computer tape files using a Cardputer Adv.
+
+## Supports<br />
+Commodore<br />ZX Spectrum<br />MSX<br />Acorn<br />BBC Micro<br />Dragon<br />Tandy CoCo<br />Oric<br />
 
 This project is a work in progress. I assume no responsibility or liability for any errors, omissions, or outcomes resulting from the use of the information provided within this project.
 
@@ -51,6 +54,14 @@ Supports uef and hq files.<br />
 Press R to enable/disable remote control.<br />
 
 <br />Make sure uef files are uncompressed. Some uef files are gzip‑compressed and will need to be decompressed using a tool like gzip.<br />
+
+### Dragon and Tandy CoCo<br />
+Supports cas files.<br />
+Press R to enable/disable remote control.<br />
+
+### Oric<br />
+Supports tap files.<br />
+Press R to enable/disable remote control.<br />
 
 ## Installation<br />
 Download the .bin file from the releases page.<br />

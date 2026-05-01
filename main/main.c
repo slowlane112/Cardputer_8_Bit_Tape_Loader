@@ -18,6 +18,8 @@
 #include "spectrum_player.h"
 #include "msx_player.h"
 #include "acorn_player.h"
+#include "dragon_player.h"
+#include "oric_player.h"
 
 //(Top) → Component config → FreeRTOS → Kernel - (1000) configTICK_RATE_HZ
 //(Top) → Component config → ESP System Settings - CPU frequency (240 MHz)
@@ -43,6 +45,8 @@ void app_main(void)
 			case STATE_PLAYER_SPECTRUM: 	spectrum_player_main();  	break;
 			case STATE_PLAYER_MSX: 			msx_player_main();  		break;
 			case STATE_PLAYER_ACORN: 		acorn_player_main();  		break;									
+			case STATE_PLAYER_DRAGON: 		dragon_player_main();  		break;					
+			case STATE_PLAYER_ORIC: 		oric_player_main();  		break;			
 		}
 	}
 
