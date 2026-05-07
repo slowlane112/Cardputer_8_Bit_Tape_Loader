@@ -57,11 +57,11 @@ void graphic_display_text(const char *text, int y_start, int x_start, uint16_t t
 void graphic_display_loading_screen() 
 {
 	
-	for (int i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; i++) {
+	for (int i = (DISPLAY_WIDTH * HEADER_HEIGHT); i < DISPLAY_WIDTH * DISPLAY_HEIGHT; i++) {
 		framebuffer[i] = BG_COLOR;
 	}
 	
-	graphic_display_text("Loading...", (DISPLAY_HEIGHT / 2) - 8, (DISPLAY_WIDTH / 2) - (5 * 8), LABEL_COLOR, BG_COLOR);
+	graphic_display_text("Loading...", ((DISPLAY_HEIGHT - HEADER_HEIGHT) / 2) - 8 + HEADER_HEIGHT, (DISPLAY_WIDTH / 2) - (5 * 8), LABEL_COLOR, BG_COLOR);
 	
 	display_draw();
 }
@@ -88,13 +88,13 @@ void graphic_display_invalid_file_screen(const char *text)
 	
 }
 
-void draw_header(const char *text) {
-	
+static void draw_header_with_background(const char *text, uint16_t bg_color) {
+
 	for (int y = 0; y < HEADER_HEIGHT; y++) {
 		
 		for (int x = 0; x < DISPLAY_WIDTH; x++) {
 	
-			framebuffer[(y * DISPLAY_WIDTH) + x] = HEADER_BG_COLOR;
+			framebuffer[(y * DISPLAY_WIDTH) + x] = bg_color;
 	
 		}
 
@@ -103,7 +103,19 @@ void draw_header(const char *text) {
 	int text_y_start = 2;
 	int text_x_start = 4;
 	
-	graphic_display_text(text, text_y_start, text_x_start, HEADER_LABEL_COLOR, HEADER_BG_COLOR);
+	graphic_display_text(text, text_y_start, text_x_start, HEADER_LABEL_COLOR, bg_color);	
+	
+}
+
+void draw_header(const char *text) {
+	
+	draw_header_with_background(text, HEADER_BG_COLOR);
+	
+}
+
+void draw_header_error(const char *text) {
+	
+	draw_header_with_background(text, BG_ERROR_COLOR);
 	
 }
 
@@ -237,4 +249,72 @@ void graphic_draw_progress_bar(size_t pos, size_t total, int x_pos, int y_pos, u
 	graphic_display_text(buf_percentage, y_pos, pos_x, LABEL_COLOR, BG_COLOR);
 	
 }
+
+void graphic_draw_system_icon(int y_start, int x_start, uint16_t text_fg_color, uint16_t text_bg_color) {
+
+	/*uint8_t system_icon_16x16[16][16] = {
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0},
+		{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
+		{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
+		{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
+		{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
+		{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
+		{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
+		{0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+		{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+		{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+		{0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},		
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}		
+	};*/
+	
+    uint8_t system_icon_16x16[32] = {
+        0x00, 0x00,
+        0x0F, 0xF0,
+        0x08, 0x10,
+        0x08, 0x10,
+        0x08, 0x10,
+        0x08, 0x10,
+        0x08, 0x10,
+        0x08, 0x10,
+        0x0F, 0xF0,
+        0x00, 0x00,
+        0x7F, 0xFE,
+        0x40, 0x02,
+        0x40, 0x02,
+        0x7F, 0xFE,
+        0x00, 0x00,
+        0x00, 0x00
+    };
+
+    int y = y_start;
+
+    for (int row = 0; row < 16; row++) {
+
+        int x = x_start;
+
+        uint8_t b0 = system_icon_16x16[row * 2 + 0];
+        uint8_t b1 = system_icon_16x16[row * 2 + 1];
+
+        for (int col = 0; col < 16; col++) {
+
+            uint8_t pixel;
+
+            if (col < 8) {
+                pixel = (b0 >> (7 - col)) & 1;
+            } else {
+                pixel = (b1 >> (15 - col)) & 1;
+            }
+
+            framebuffer[(y * DISPLAY_WIDTH) + x] = (pixel == 1) ? text_fg_color : text_bg_color;
+
+            x++;
+        }
+
+        y++;
+    }
+}
+
 

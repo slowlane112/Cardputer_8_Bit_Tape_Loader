@@ -37,13 +37,17 @@ static const uint16_t INDICATOR_REMOTE_COLOR = 0x00F8;
 static const uint16_t PROGRESS_BAR_ON_COLOR = 0xE846;
 static const uint16_t PROGRESS_BAR_OFF_COLOR = 0x00F8;
 
+static const uint16_t BG_ERROR_COLOR = 0x00F8;
+
 void graphic_display_text(const char *text, int y_start, int x_start, uint16_t text_fg_color, uint16_t text_bg_color);
 void graphic_display_loading_screen();
 void draw_header(const char *text);
+void draw_header_error(const char *text);
 void draw_footer(graphic_footer_button_t *btn1, graphic_footer_button_t *btn2, graphic_footer_button_t *btn3);
 void graphic_draw_status_indicator(const char *text, bool status, int x_pos, int y_pos, uint16_t on_color, uint16_t off_color);
 void graphic_draw_progress_bar(size_t pos, size_t total, int x_pos, int y_pos, uint16_t on_color, uint16_t off_color);
 void graphic_display_invalid_file_screen(const char *text);
+void graphic_draw_system_icon(int y_start, int x_start, uint16_t text_fg_color, uint16_t text_bg_color);
 
 #endif
 

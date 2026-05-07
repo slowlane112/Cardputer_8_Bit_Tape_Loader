@@ -17,21 +17,24 @@
 
 FILE *file_browser_file = NULL;
 size_t file_browser_file_len = 0;
-char *file_browser_file_name;
+char file_browser_file_name[256];
 static sdcard_list_t items = {0};
 static int selected_item = 0;
 static char current_dir[2048] = "/sdcard";
 static char previous_item[256];
-static char selected_file_path[2200]; 
+static char selected_file_path[2304]; 
 static bool file_browser_process = false;
 static bool update_display = false;
 static sdcard_result_t sdcard_status = 0;
+static sdcard_result_t file_sdcard_status = 0;
 static int items_per_page = 6;
 
 static int get_selected_item() {
 	
+	uint32_t selected_file_index = sdcard_get_index_by_filename(current_dir, previous_item);
+	
 	for (size_t i = 0; i < items.count; i++) {
-		if (strcmp(previous_item, items.entries[i].name) == 0) {
+		if (selected_file_index == items.entries[i]->file_index) {
 			 return i;
 		 }
 	}
@@ -48,8 +51,11 @@ static void display_screen(void) {
 			framebuffer[(y * DISPLAY_WIDTH) + x] = BG_COLOR;
 		}
 	}
-	
-	if (sdcard_status == SD_OK) {
+
+	char directory_name[40];
+	file_display_directory_name(current_dir, directory_name, sizeof(directory_name));
+			
+	if (sdcard_status == SD_OK || sdcard_status == SD_OK_PARTIAL) {
 	
 		int current_page = selected_item / items_per_page;
 		
@@ -63,30 +69,30 @@ static void display_screen(void) {
 		int text_y_start = 2;
 		int text_x_start = 4;
 		
-		char directory_name[40];
-		file_display_directory_name(current_dir, directory_name, sizeof(directory_name));
-		
 
-		draw_header((const char *)directory_name);
+		
+		if (sdcard_status == SD_OK_PARTIAL) {
+			draw_header_error((const char *)directory_name);
+		}
+		else {
+			draw_header((const char *)directory_name);
+		}
 		
 		text_y_start = text_y_start + 20;
 		
 		for (size_t i = item_start; i < item_end; i++) {
 			
-			char item_name[40];
-			char temp_file[39];
-			
-			file_display_file_name(items.entries[i].name, items.entries[i].type, temp_file, sizeof(temp_file));
-			snprintf(item_name, sizeof(item_name), "%s%s", ((i == selected_item) ? ">" : " "), temp_file);
+			char item_name[30];
+			snprintf(item_name, sizeof(item_name), "%s%s", ((i == selected_item) ? ">" : " "), items.entries[i]->name);
 
-			graphic_display_text(item_name, text_y_start, text_x_start, ((items.entries[i].type == SDCARD_DIR) ? FOLDER_COLOR : LABEL_COLOR), BG_COLOR);
+			graphic_display_text(item_name, text_y_start, text_x_start, ((items.entries[i]->type == SDCARD_DIR) ? FOLDER_COLOR : LABEL_COLOR), BG_COLOR);
 			
-		
 			text_y_start = text_y_start + 19;
 		}
 	
 	}
 	else {
+		draw_header((const char *)directory_name);
 		graphic_display_text("SD Card Error", 30, 4, LABEL_COLOR, BG_COLOR);
 		graphic_display_text("Can't Read SD Card.", 60, 4, LABEL_COLOR, BG_COLOR);
 		graphic_display_text("Please insert an SD card", 80, 4, LABEL_COLOR, BG_COLOR);
@@ -99,12 +105,11 @@ static void display_screen(void) {
 
 static void get_files(const char *directory)
 {
-
 	sdcard_list_free(&items);
 	items = sdcard_list_dir(directory);
 	sdcard_status = items.status;
 	
-	if (sdcard_status == SD_OK) {
+	if (sdcard_status == SD_OK || sdcard_status == SD_OK_PARTIAL) {
 
 		selected_item = 0;
 		if (previous_item[0] != '\0') {
@@ -115,7 +120,6 @@ static void get_files(const char *directory)
 	}
 	
 	update_display = true;
-
 }
 
 static void pop_dir(void) {
@@ -159,16 +163,20 @@ static void button_load(void)
 
 	if (items.count > 0) {
 		
-		if (items.entries[selected_item].type == SDCARD_DIR) {
-			append_dir(items.entries[selected_item].name);
+		graphic_display_loading_screen();
+		
+		sdcard_get_filename_by_index(current_dir, items.entries[selected_item]->file_index, file_browser_file_name, sizeof(file_browser_file_name));
+		
+		if (items.entries[selected_item]->type == SDCARD_DIR) {
+			append_dir(file_browser_file_name);
 			get_files(current_dir);
 		}
 		else {
 
 			// selected file
-			snprintf(selected_file_path, sizeof(selected_file_path), "%s/%s", current_dir, items.entries[selected_item].name);
+			snprintf(selected_file_path, sizeof(selected_file_path), "%s/%s", current_dir, file_browser_file_name);
 			
-			file_browser_file = sd_open(selected_file_path, &file_browser_file_len);
+			file_browser_file = sdcard_open(selected_file_path, &file_browser_file_len);
 			
 			if (file_browser_file == NULL) {
 				sdcard_status = SD_ERR_FILE_OPEN;
@@ -176,7 +184,7 @@ static void button_load(void)
 			}
 			else {
 			
-				file_browser_file_name = items.entries[selected_item].name;
+				file_sdcard_status = sdcard_status;
 				
 				if (system_selected_index == 0) {
 					state = STATE_PLAYER_COMMODORE;
@@ -334,13 +342,16 @@ static void button_item_skip_end(void)
 
 static void button_back(void) {
 	
+	graphic_display_loading_screen();
+	
 	if (sdcard_status == SD_ERR_FILE_OPEN) {
 		// open file error, go back to directory list
 		get_previous_item(selected_file_path, previous_item, sizeof(previous_item));
 		get_files(current_dir);
 	}
-	else if (sdcard_status != SD_OK || strcmp(current_dir, "/sdcard") == 0) {
+	else if ((sdcard_status != SD_OK && sdcard_status != SD_OK_PARTIAL) || strcmp(current_dir, "/sdcard") == 0) {
 		// root or sd card error, go back to main screen
+		strcpy(current_dir, "/sdcard");
 		state = STATE_SYSTEM;
 		file_browser_process = false;
 	}
@@ -368,7 +379,7 @@ static void button_letter(char letter) {
 		
 		for (int i = 0; i < items.count; i++) {
 			int idx = (selected_item + 1 + i) % items.count;
-			if (starts_with_letter(items.entries[idx].name, letter)) { 
+			if (starts_with_letter(items.entries[idx]->name, letter)) { 
 				selected_item = idx;
 				break;
 			}
@@ -419,6 +430,20 @@ static void process_keyboard(void)
 	}
 }
 
+void return_from_file(void) {
+	
+	// return from file
+	get_previous_item(selected_file_path, previous_item, sizeof(previous_item));
+	sdcard_status = file_sdcard_status;
+	selected_item = 0;
+	if (previous_item[0] != '\0') {
+		selected_item = get_selected_item();
+		previous_item[0] = '\0';
+	}
+	update_display = true;
+		
+}
+
 void file_browser_main(void) {
 
 	sdcard_status = 0;
@@ -426,13 +451,16 @@ void file_browser_main(void) {
 	
 	sdcard_system_init();
 	
+	graphic_display_loading_screen();
+	
 	if (file_browser_file != NULL) {
-		get_previous_item(selected_file_path, previous_item, sizeof(previous_item));
 		fclose(file_browser_file);
 		file_browser_file = NULL;
+		return_from_file();
 	}
-
-	get_files(current_dir);
+	else {
+		get_files(current_dir);
+	}
 	
 	file_browser_process = true;
 	

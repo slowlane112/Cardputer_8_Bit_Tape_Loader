@@ -18,6 +18,7 @@
 #include "tape_buffer.h"
 #include "nvs.h"
 #include "state.h"
+#include "config.h"
 
 volatile bool dragon_player_file_valid = false;
 volatile uint8_t dragon_player_data_tracker = 0;
@@ -284,7 +285,7 @@ static void tape_task(void *arg)
 {
 	uint8_t header_data[1024];
 
-	size_t header_len = sd_read_chunk(file_browser_file, file_browser_file_len, 0, header_data, 1024);
+	size_t header_len = sdcard_read_chunk(file_browser_file, file_browser_file_len, 0, header_data, 1024);
 
 	if (cas_valid(header_data, header_len)) {
 
@@ -315,11 +316,31 @@ void dragon_player_main()
     
     load_dragon_use_remote();
     
-    if (rom_done_sem == NULL)
+    if (rom_done_sem == NULL) {
         rom_done_sem = xSemaphoreCreateCounting(2, 0);
-        
-    xTaskCreatePinnedToCore(main_task, "main", 4096, NULL, 2, NULL, 0);
-	xTaskCreatePinnedToCore(tape_task, "tape", 8192, NULL, 5, NULL, 1);
+	}
+	
+	xTaskCreateStaticPinnedToCore(
+        main_task,
+        "main",
+        4096,
+        NULL,
+        2,
+        mainStack,
+        &mainTCB,
+        0
+    );
+
+    xTaskCreateStaticPinnedToCore(
+        tape_task,
+        "tape",
+        8192,
+        NULL,
+        5,
+        tapeStack,
+        &tapeTCB,
+        1
+    );	
 	
     xSemaphoreTake(rom_done_sem, portMAX_DELAY);
     xSemaphoreTake(rom_done_sem, portMAX_DELAY);

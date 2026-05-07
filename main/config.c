@@ -8,6 +8,11 @@
 #include "esp_task_wdt.h"
 #include "config.h"
 
+StaticTask_t mainTCB;
+StackType_t mainStack[4096];
+StaticTask_t tapeTCB;
+StackType_t tapeStack[8192];
+
 void config_init(void)
 {
 	

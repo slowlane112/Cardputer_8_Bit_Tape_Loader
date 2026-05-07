@@ -19,6 +19,7 @@
 #include "tape_buffer.h"
 #include "nvs.h"
 #include "state.h"
+#include "config.h"
 
 typedef enum {
     LOAD_CHAIN,
@@ -253,7 +254,7 @@ static void tape_task(void *arg)
 {
 	uint8_t header_data[256];
 
-	size_t header_len = sd_read_chunk(file_browser_file, file_browser_file_len, 0, header_data, 256);
+	size_t header_len = sdcard_read_chunk(file_browser_file, file_browser_file_len, 0, header_data, 256);
 
 	if (uef_valid(header_data, header_len)) {
 
@@ -284,11 +285,31 @@ void acorn_player_main()
     
     load_acorn_use_remote();
     
-    if (rom_done_sem == NULL)
+    if (rom_done_sem == NULL) {
         rom_done_sem = xSemaphoreCreateCounting(2, 0);
-        
-    xTaskCreatePinnedToCore(main_task, "main", 4096, NULL, 2, NULL, 0);
-	xTaskCreatePinnedToCore(tape_task, "tape", 8192, NULL, 5, NULL, 1);
+	}
+	
+	xTaskCreateStaticPinnedToCore(
+        main_task,
+        "main",
+        4096,
+        NULL,
+        2,
+        mainStack,
+        &mainTCB,
+        0
+    );
+
+    xTaskCreateStaticPinnedToCore(
+        tape_task,
+        "tape",
+        8192,
+        NULL,
+        5,
+        tapeStack,
+        &tapeTCB,
+        1
+    );
 	
     xSemaphoreTake(rom_done_sem, portMAX_DELAY);
     xSemaphoreTake(rom_done_sem, portMAX_DELAY);

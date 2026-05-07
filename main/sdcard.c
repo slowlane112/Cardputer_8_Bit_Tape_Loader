@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include "sdcard.h"
 #include "system.h"
+#include "file.h"
 
 #define TAG "SDCARD"
 
@@ -119,19 +120,6 @@ void sdcard_deinit(void)
     }
 }
 
-static int sdcard_entry_compare(const void *a, const void *b)
-{
-    const sdcard_entry_t *ea = a;
-    const sdcard_entry_t *eb = b;
-
-    // Directories first
-    if (ea->type != eb->type)
-        return (ea->type == SDCARD_DIR) ? -1 : 1;
-
-    // Alphabetical
-    return strcasecmp(ea->name, eb->name);
-}
-
 static bool has_allowed_extension(const char *filename)
 {
 
@@ -150,111 +138,225 @@ static bool has_allowed_extension(const char *filename)
 
 void sdcard_list_free(sdcard_list_t *list)
 {
-    if (!list || !list->entries) return;
+    if (!list) return;
 
-    for (size_t i = 0; i < list->count; i++) {
-        free(list->entries[i].name);
+    // free all names
+    for (sdcard_chunk_t *c = list->chunks; c; c = c->next) {
+        for (size_t i = 0; i < c->count; i++) {
+            free(c->entries[i].name);
+        }
     }
 
+    // free chunks
+    sdcard_chunk_t *c = list->chunks;
+    while (c) {
+        sdcard_chunk_t *next = c->next;
+        free(c);
+        c = next;
+    }
+
+    // free pointer array
     free(list->entries);
+
     list->entries = NULL;
+    list->chunks = NULL;
     list->count = 0;
+}
+
+static int sdcard_entry_compare(const void *a, const void *b)
+{
+    const sdcard_entry_t *ea = a;
+    const sdcard_entry_t *eb = b;
+
+    // Directories first
+    if (ea->type != eb->type) {
+        return (ea->type == SDCARD_DIR) ? -1 : 1;
+	}
+    // Alphabetical
+    return strcasecmp(ea->name, eb->name);
+}
+
+int compare_ptrs(const void *a, const void *b)
+{
+    const sdcard_entry_t *ea = *(const sdcard_entry_t * const *)a;
+    const sdcard_entry_t *eb = *(const sdcard_entry_t * const *)b;
+
+    return sdcard_entry_compare(ea, eb);
+}
+
+static inline size_t free_heap(void) {
+    return heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
 }
 
 sdcard_list_t sdcard_list_dir(const char *path)
 {
+	
     sdcard_list_t list = {0};
 
     if (sdcard == NULL || sdmmc_get_status(sdcard) != ESP_OK) {
-        ESP_LOGE("SDCARD", "Card is missing or unresponsive (0x107 logic)");
-        list.status = SD_ERR_TIMEOUT; 
+        list.status = SD_ERR_TIMEOUT;
+        return list;
+    }
+
+    DIR *dir = opendir(path);
+    if (!dir) {
+        list.status = SD_ERR_NOT_FOUND;
         return list;
     }
 
     list.status = SD_OK;
 
-    DIR *dir = opendir(path);
-    if (!dir) {
-        ESP_LOGE("SDCARD", "Failed to open directory: %s", path);
-        list.status = SD_ERR_NOT_FOUND;
-        return list;
-    }
-
-    size_t capacity = 64;
-    list.entries = malloc(capacity * sizeof(sdcard_entry_t));
-    if (!list.entries) {
-        ESP_LOGE("SDCARD", "Out of memory (initial alloc)");
-        list.status = SD_ERR_NO_MEM;
+    sdcard_chunk_t *head = calloc(1, sizeof(sdcard_chunk_t));
+    if (!head) {
         closedir(dir);
+        list.status = SD_ERR_NO_MEM;
         return list;
     }
 
+    sdcard_chunk_t *current = head;
+    uint32_t file_index = 0;
     struct dirent *entry;
-
-    while ((entry = readdir(dir)) != NULL) {
-        
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+    
+	while ((entry = readdir(dir)) != NULL) {
+		
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
+            file_index++;
             continue;
         }
 
         bool is_dir = (entry->d_type == DT_DIR);
-        bool allowed_file = false;
+        bool allowed = is_dir || has_allowed_extension(entry->d_name);
 
-        if (!is_dir) {
-            allowed_file = has_allowed_extension(entry->d_name);
+        if (!allowed) {
+            file_index++;
+            continue;
+        }
+        
+        //size_t name_len = strlen(entry->d_name) + 1;
+        
+        char temp_name[FILE_NAME_MAX_LEN];
+		file_display_file_name(entry->d_name, is_dir ? SDCARD_DIR : SDCARD_FILE, temp_name, sizeof(temp_name));
+        
+        size_t name_len = strlen(temp_name) + 1;
+
+		size_t required = sizeof(sdcard_entry_t) +
+                  name_len +
+                  ((list.count + 1) * sizeof(sdcard_entry_t *)) +
+                  ((current->count == SDCARD_CHUNK_SIZE) ? sizeof(sdcard_chunk_t) : 0);
+				
+
+        size_t free_now = heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
+
+		if (free_now < required + 8192) {        
+            list.status = SD_OK_PARTIAL;
+            break;
         }
 
-        if (is_dir || allowed_file) {
-
-            if (list.count == capacity) {
-                size_t new_capacity = capacity * 2;
-                sdcard_entry_t *new_entries =
-                    realloc(list.entries, new_capacity * sizeof(sdcard_entry_t));
-
-                if (!new_entries) {
-                    ESP_LOGE("SDCARD", "Out of memory (array grow)");
-                    list.status = SD_ERR_NO_MEM;
-                    goto memory_error;
-                }
-
-                list.entries = new_entries;
-                capacity = new_capacity;
+        if (current->count == SDCARD_CHUNK_SIZE) {
+            current->next = calloc(1, sizeof(sdcard_chunk_t));
+            if (!current->next) {
+                list.status = SD_OK_PARTIAL;
+                break;
             }
-
-            // Copy filename
-            sdcard_entry_t *e = &list.entries[list.count];
-            e->name = strdup(entry->d_name);
-            if (!e->name) {
-                ESP_LOGE("SDCARD", "Out of memory (string)");
-                list.status = SD_ERR_NO_MEM;
-                goto memory_error;
-            }
-
-            e->type = is_dir ? SDCARD_DIR : SDCARD_FILE;
-            list.count++;
+            current = current->next;
         }
+
+        sdcard_entry_t *e = &current->entries[current->count];
+
+        e->type = is_dir ? SDCARD_DIR : SDCARD_FILE;
+        e->file_index = file_index;
+
+        //e->name = strdup(entry->d_name);
+        e->name = strdup(temp_name);
+        
+        if (!e->name) {
+            list.status = SD_OK_PARTIAL;
+            break;
+        }
+
+        current->count++;
+        list.count++;
+        file_index++;
     }
 
     closedir(dir);
+    
+    if (list.count > 0) {
 
-    if (list.count > 1) {
-        qsort(list.entries, list.count, sizeof(sdcard_entry_t), sdcard_entry_compare);
-    }
+		size_t ptr_array_size = list.count * sizeof(sdcard_entry_t *);
+		list.entries = malloc(ptr_array_size);
+		
+		if (!list.entries) {
+			list.status = SD_ERR_NO_MEM;
+			list.entries = NULL;
+		} else {
+			size_t out_i = 0;
+			for (sdcard_chunk_t *c = head; c; c = c->next) {
+				for (size_t i = 0; i < c->count; i++) {
+					list.entries[out_i++] = &c->entries[i];
+				}
+			}
 
-    return list;
+			if (list.count > 1) {
+				qsort(list.entries, list.count, sizeof(sdcard_entry_t *), compare_ptrs);
+			}
+		}
+		
+	}
+	else {
+		list.entries = NULL;
+		list.status  = SD_OK;
+	}
 
-memory_error:
-    closedir(dir);
-    for (size_t i = 0; i < list.count; i++) {
-        free(list.entries[i].name);
-    }
-    free(list.entries);
-    list.entries = NULL;
-    list.count = 0;
+    list.chunks = head;
+
     return list;
 }
 
-FILE *sd_open(const char *path, size_t *out_len)
+void sdcard_get_filename_by_index(const char *path, uint32_t target_index, char *out, size_t out_size) {
+    DIR *dir = opendir(path);
+    if (!dir) {
+        if (out_size > 0) out[0] = '\0';
+        return;
+    }
+
+    struct dirent *entry;
+    uint32_t current_index = 0;
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (current_index == target_index) {
+            strncpy(out, entry->d_name, out_size - 1);
+            out[out_size - 1] = '\0';
+            break;
+        }
+        current_index++;
+    }
+
+    closedir(dir);
+}
+
+uint32_t sdcard_get_index_by_filename(const char *path, const char *filename) {
+    DIR *dir = opendir(path);
+    if (!dir) {
+        return UINT32_MAX;
+    }
+
+    struct dirent *entry;
+    uint32_t current_index = 0;
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, filename) == 0) {
+            closedir(dir);
+            return current_index;
+        }
+        current_index++;
+    }
+
+    closedir(dir);
+    return UINT32_MAX;
+}
+
+FILE *sdcard_open(const char *path, size_t *out_len)
 {
     FILE *f = fopen(path, "rb");
     if (!f) return NULL;
@@ -269,7 +371,7 @@ FILE *sd_open(const char *path, size_t *out_len)
     return f;
 }
 
-size_t sd_read_chunk(FILE *f, size_t file_len, size_t pos, uint8_t *buf, size_t chunk_size)
+size_t sdcard_read_chunk(FILE *f, size_t file_len, size_t pos, uint8_t *buf, size_t chunk_size)
 {
     if (pos >= file_len)
         return 0;

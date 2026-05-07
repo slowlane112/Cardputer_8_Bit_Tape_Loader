@@ -17,6 +17,7 @@
 #include "tape_buffer.h"
 #include "nvs.h"
 #include "state.h"
+#include "config.h"
 
 volatile bool spectrum_player_file_valid = false;
 volatile uint8_t spectrum_player_data_tracker = 0;
@@ -58,27 +59,13 @@ static bool has_data_activity() {
 	return false;
 }
 
-static bool tap_valid(const uint8_t *buf, size_t len) {
-
-    if (len < 21) return false;
-
-    uint16_t block_len = buf[0] | (buf[1] << 8);
-    if (block_len != 19) return false;
-
-    if (block_len + 2 > len) return false;
-
-    if (buf[2] != 0x00) return false;
-
-    uint8_t type = buf[13 + 2];
-    if (type != 0x00 && type != 0x03) return false;
-
-    uint8_t chk = 0;
-    for (uint16_t i = 0; i < block_len; i++) {
-        chk ^= buf[2 + i];
-    }
-    if (chk != 0) return false;
-
-    return true;
+static bool tap_valid(const uint8_t *buf, size_t len)
+{
+    return (buf != NULL &&
+            len >= 3 &&
+            buf[0] == 0x13 &&
+            buf[1] == 0x00 &&
+            buf[2] == 0x00);
 }
 
 static void display_progress(void) {
@@ -255,7 +242,7 @@ static void tape_task(void *arg)
 
 	uint8_t header_data[100];
 
-	size_t header_size = sd_read_chunk(file_browser_file, file_browser_file_len, 0, header_data, 100);
+	size_t header_size = sdcard_read_chunk(file_browser_file, file_browser_file_len, 0, header_data, 100);
 		
 	if (header_size > 7 && memcmp(header_data, "ZXTape!", 7) == 0) {
 		spectrum_player_file_valid = true;
@@ -285,11 +272,31 @@ void spectrum_player_main()
 	
 	load_spectrum_system_type();
     
-    if (rom_done_sem == NULL)
+    if (rom_done_sem == NULL) {
         rom_done_sem = xSemaphoreCreateCounting(2, 0);
-        
-    xTaskCreatePinnedToCore(main_task, "main", 4096, NULL, 2, NULL, 0);
-	xTaskCreatePinnedToCore(tape_task, "tape", 8192, NULL, 5, NULL, 1);
+	}
+	
+    xTaskCreateStaticPinnedToCore(
+        main_task,
+        "main",
+        4096,
+        NULL,
+        2,
+        mainStack,
+        &mainTCB,
+        0
+    );
+
+    xTaskCreateStaticPinnedToCore(
+        tape_task,
+        "tape",
+        8192,
+        NULL,
+        5,
+        tapeStack,
+        &tapeTCB,
+        1
+    );
 
     xSemaphoreTake(rom_done_sem, portMAX_DELAY);
     xSemaphoreTake(rom_done_sem, portMAX_DELAY);

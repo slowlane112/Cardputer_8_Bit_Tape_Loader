@@ -20,7 +20,7 @@ volatile size_t tape_buffer_2_size;
 
 void tape_buffer_load_initial(size_t buffer_overlap, size_t start_pos) {
     size_t pos = start_pos;
-    tape_buffer_1_size = sd_read_chunk(file_browser_file, file_browser_file_len, pos, (uint8_t *)tape_buffer_1, TAPE_BUFFER_SIZE);
+    tape_buffer_1_size = sdcard_read_chunk(file_browser_file, file_browser_file_len, pos, (uint8_t *)tape_buffer_1, TAPE_BUFFER_SIZE);
     tape_buffer_1_offset = pos;
 }
 
@@ -29,7 +29,7 @@ void tape_buffer_load(size_t buffer_overlap) {
     if (tape_buffer_1_size == TAPE_BUFFER_SIZE) {
         size_t pos = tape_buffer_1_offset + tape_buffer_1_size - buffer_overlap;
 
-        tape_buffer_2_size = sd_read_chunk(
+        tape_buffer_2_size = sdcard_read_chunk(
             file_browser_file,
             file_browser_file_len,
             pos,

@@ -10,7 +10,6 @@
 #include "esp_timer.h"
 
 #define DIRECTORY_NAME_MAX_LEN	29
-#define FILE_NAME_MAX_LEN	28
 #define FILE_NAME_SCROLL_DISPLAY_LEN        29
 #define FILE_NAME_SCROLL_INTERVAL_US 		(400 * 1000)
 #define FILE_NAME_SCROLL_HOLD_START_US      (3 * 1000 * 1000)
@@ -42,41 +41,52 @@ void file_display_directory_name(const char *directory, char *out, size_t out_si
     out[terminal_index] = '\0';
 }
 
-void file_display_file_name(const char *filename, sdcard_item_type_t type, char *out, size_t out_size) {
-
+void file_display_file_name(const char *filename, sdcard_item_type_t type, char *out, size_t out_size)
+{
     if (!out || out_size == 0) return;
 
-    size_t terminal_index = (out_size > FILE_NAME_MAX_LEN + 1) ? FILE_NAME_MAX_LEN : (out_size - 1);
+    size_t max_len = out_size - 1;
+    out[max_len] = '\0';
 
-    char temp[256];
-    strncpy(temp, filename, 255);
-    temp[255] = '\0';
-    
-    size_t base_len = strlen(temp);
-    
-    if (type == SDCARD_FILE) {
-		char *dot = strrchr(temp, '.');
-		if (dot) {
-			base_len = (size_t)(dot - temp);
-		}
-		temp[base_len] = '\0';
-	}
-
-    if (base_len <= terminal_index) {
-        strcpy(out, temp);
-    } else if (terminal_index >= 5) {
-        
-        int split_count = FILE_NAME_MAX_LEN - ((FILE_NAME_MAX_LEN - 3) / 2);
-        size_t head = (terminal_index == 38) ? split_count : (terminal_index - 3) / 2;
-        size_t tail = terminal_index - head - 3;
-
-        memcpy(out, temp, head);
-        out[head] = '.'; out[head+1] = '.'; out[head+2] = '.';
-        memcpy(out + head + 3, temp + (base_len - tail), tail);
-    } else {
-        memset(out, '.', terminal_index);
+    if (!filename) {
+        out[0] = '\0';
+        return;
     }
-    out[terminal_index] = '\0';
+
+    const char *base = filename;
+    size_t base_len = strlen(base);
+
+    if (type == SDCARD_FILE) {
+        const char *dot = strrchr(base, '.');
+        if (dot) {
+            base_len = (size_t)(dot - base);
+        }
+    }
+
+    if (base_len <= max_len) {
+        memcpy(out, base, base_len);
+        out[base_len] = '\0';
+        return;
+    }
+
+    if (max_len >= 5) {
+        size_t head = (max_len - 3) / 2;
+        size_t tail = max_len - head - 3;
+
+        memcpy(out, base, head);
+
+        out[head] = '.';
+        out[head + 1] = '.';
+        out[head + 2] = '.';
+
+        memcpy(out + head + 3, base + (base_len - tail), tail);
+
+        out[max_len] = '\0';
+        return;
+    }
+
+    memset(out, '.', max_len);
+    out[max_len] = '\0';
 }
 
 const char* file_name_scroll(const char *name)

@@ -46,18 +46,18 @@ static void display_screen(void) {
 		}
 	}
 	
-	draw_header("8-Bit Tape Loader      v1.1.0");
+	draw_header("8-Bit Tape Loader      v1.1.1");
 	
 	int pos_y = 22;
-	int pos_x_ = 4;
-	
-	char item_name[40];
+	int pos_x = 4;
 	
 	for (int i = 0; i < systems_count; i++) {
 		
-        snprintf(item_name, sizeof(item_name), "%s%s", ((i == selected_item) ? ">" : " "), systems[i]);
-	
-		graphic_display_text(item_name, pos_y, pos_x_, LABEL_COLOR, BG_COLOR);
+		graphic_display_text((i == selected_item) ? ">" : " ", pos_y, pos_x, LABEL_COLOR, BG_COLOR);
+		
+		graphic_draw_system_icon(pos_y, pos_x + 8 + 2, LABEL_COLOR, BG_COLOR);
+		
+		graphic_display_text(systems[i], pos_y, pos_x + (8 * 3) + 4, LABEL_COLOR, BG_COLOR);
 		
 		pos_y = pos_y + 19;
     }

@@ -9,7 +9,7 @@
 
 extern FILE *file_browser_file;
 extern size_t file_browser_file_len;
-extern char *file_browser_file_name;
+extern char file_browser_file_name[256];
 void file_browser_main(void);
 
 #endif
