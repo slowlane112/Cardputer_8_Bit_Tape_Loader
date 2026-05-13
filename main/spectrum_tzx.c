@@ -1,4 +1,4 @@
-/*
+ /*
  * SPDX-FileCopyrightText: 2026 slowlane112
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -26,6 +26,7 @@ static size_t last_block_pos = 0;
 static uint16_t loop_block_count = 0;
 static size_t loop_block_start_pos = 0;
 static bool loop_block_did_buffer_swap = false;
+static uint16_t play_block_count = 0;
 
 static bool test_mode = false;
 
@@ -153,20 +154,24 @@ static IRAM_ATTR void pulse(uint32_t us) {
 static IRAM_ATTR void pause(uint16_t pause_length_ms) {
 
 	if (test_mode == false && spectrum_player_user_tape_status) {
+		
 		flip();
 		esp_rom_delay_us(1000);
 		low();
-		esp_rom_delay_us((pause_length_ms - 1) * 1000);
+		if (pause_length_ms < 2) {
+			esp_rom_delay_us(1000);
+		}
+		else {
+			esp_rom_delay_us((pause_length_ms - 1) * 1000);
+		}
 	}
 }
-
 
 static void stop(void) {
 	spectrum_player_pos = last_block_pos;
 	spectrum_player_tape_status = false;
 	spectrum_player_user_tape_status = false;
 }
-
 
 static IRAM_ATTR uint16_t read_word(size_t pos) {
 	return tape_buffer_1[pos - tape_buffer_1_offset] | (tape_buffer_1[pos - tape_buffer_1_offset + 1] << 8);
@@ -181,7 +186,6 @@ static IRAM_ATTR uint32_t read_uint24(size_t pos) {
 								(tape_buffer_1[pos - tape_buffer_1_offset + 1] << 8) |
 								(tape_buffer_1[pos - tape_buffer_1_offset + 2] << 16);
 }
-
 
 static IRAM_ATTR uint32_t read_uint32(size_t pos) {
     return tape_buffer_1[pos - tape_buffer_1_offset] |
@@ -493,7 +497,6 @@ static IRAM_ATTR void block_18_csw_recording(void) {
 
 static IRAM_ATTR void block_19_generalized_data_block(void) {
     
-    //uint32_t length = read_uint32(spectrum_player_pos);
     uint16_t pause_ms = read_word(spectrum_player_pos + 4);
     uint32_t totp = read_uint32(spectrum_player_pos + 6);
     uint8_t npp = read_byte(spectrum_player_pos + 10);
@@ -625,10 +628,17 @@ static IRAM_ATTR void block_20_pause(void) {
 	spectrum_player_pos += 2;
 			
 	if (pause_ms == 0) {
-		// set to next block
-		last_block_pos = spectrum_player_pos;
-		// set to stopping
-		spectrum_player_user_tape_status = false;
+		
+		if (play_block_count > 1) {
+			
+			// do not stop if 1st block after pressing play
+		
+			// set to next block
+			last_block_pos = spectrum_player_pos;
+			// set to stopping
+			spectrum_player_user_tape_status = false;
+			
+		}
 	}
 	else {
 		pause(pause_ms);
@@ -681,7 +691,9 @@ static IRAM_ATTR void block_2A_stop_tape_48k(void) {
 			
 	spectrum_player_pos += (4 + length);
 	
-	if (spectrum_player_system_type == 0) { //48k
+	if (play_block_count > 1 && spectrum_player_system_type == 0) { //48k
+		
+		// do not stop if 1st block after pressing play
 		
 		// set to next block
 		last_block_pos = spectrum_player_pos;
@@ -750,10 +762,16 @@ static IRAM_ATTR void block_35_custom_info_block(void) {
 }
 
 static IRAM_ATTR void play(void) {
+	
+	play_block_count = 0;
 
 	if (spectrum_player_pos == 0) { // skip header
 		spectrum_player_pos = 10;
 	}
+	
+	low();
+	
+	esp_rom_delay_us(10000);
 
 	while (spectrum_player_pos < file_browser_file_len) {
 		
@@ -763,6 +781,7 @@ static IRAM_ATTR void play(void) {
 		
 		uint8_t block_id = tape_buffer_1[spectrum_player_pos - tape_buffer_1_offset];
 		spectrum_player_pos++;
+		play_block_count++;
 		
 		//printf("Block: 0x%02X | Pos: %u (0x%X)\n", block_id, spectrum_player_pos - 1, spectrum_player_pos - 1);
 
@@ -895,6 +914,10 @@ static IRAM_ATTR void play(void) {
 
 
 		if (!spectrum_player_user_tape_status) { // stopping
+			if (spectrum_player_stop_pos == spectrum_player_pos) {
+				// person stopped at end of last block. Maybe during pause.
+				last_block_pos = spectrum_player_pos;
+			}
 			break;
 		}
 
@@ -905,10 +928,21 @@ static IRAM_ATTR void play(void) {
 		
 	}
 	
-	if (spectrum_player_user_tape_status) { // not stopping
-		flip();
+
+	// flip
+	out_level ^= 1;
+	if (out_level) {
+		GPIO.out_w1ts = AUDIO_OUT_PIN_MASK; 
+	} else {
+		GPIO.out_w1tc = AUDIO_OUT_PIN_MASK;
 	}
-	
+
+	esp_rom_delay_us(10000);
+
+	// set level back to zero
+	out_level = 0;
+	gpio_set_level(AUDIO_OUT_PIN, out_level);
+		
     stop();
 	
 }

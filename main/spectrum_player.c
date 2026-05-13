@@ -28,9 +28,10 @@ volatile bool spectrum_player_display_ready = false;
 volatile bool spectrum_player_process_active = false; // tape_loaded
 volatile bool spectrum_player_user_tape_status = false;
 volatile bool spectrum_player_tape_status = false; // playing / stopped
+volatile size_t spectrum_player_stop_pos = 0;
 static SemaphoreHandle_t rom_done_sem = NULL;
 static uint8_t processed_data_tracker = 0;
-static size_t stop_pos = 0;
+
 volatile uint8_t spectrum_player_system_type = 0;
 
 const char *spectrum_system_types[] = {
@@ -107,7 +108,7 @@ static void display_progress(void) {
 		graphic_draw_status_indicator("Data", has_data_activity(), pos_x, pos_y, INDICATOR_DATA_COLOR, INDICATOR_OFF_COLOR);
 		
 		
-		size_t display_pos = stop_pos == 0 ? spectrum_player_pos : stop_pos;
+		size_t display_pos = spectrum_player_stop_pos == 0 ? spectrum_player_pos : spectrum_player_stop_pos;
 		
 		pos_x = 4;
 		pos_y = 70;
@@ -176,20 +177,21 @@ static void process_keyboard(void)
 		
 		if (key == '1') { // PLAY
 			if (!spectrum_player_tape_status) {
-				stop_pos = 0;
+				spectrum_player_stop_pos = 0;
 				processed_data_tracker = spectrum_player_data_tracker;
 				spectrum_player_user_tape_status = true;
 			}
 		}
 		else if (key == '2') { // STOP
 			if (spectrum_player_tape_status) {
-				stop_pos = spectrum_player_pos;
+				spectrum_player_stop_pos = spectrum_player_pos;
+				printf("spectrum_player_stop_pos: %d\n", spectrum_player_stop_pos);
 				spectrum_player_user_tape_status = false;
 			}
 		}
 		 else if (key == '3') { // Reset
 			if (spectrum_player_tape_status == false) { // tape stopped
-				stop_pos = 0;
+				spectrum_player_stop_pos = 0;
 				spectrum_player_pos = 0; // reset tape position
 			}
 		}
@@ -265,7 +267,7 @@ static void tape_task(void *arg)
 
 void spectrum_player_main()
 {
-	stop_pos = 0;
+	spectrum_player_stop_pos = 0;
 	spectrum_player_file_valid = false;
     spectrum_player_process_active = true;
 	spectrum_player_display_ready = false;

@@ -46,7 +46,7 @@ static void display_screen(void) {
 		}
 	}
 	
-	draw_header("8-Bit Tape Loader      v1.1.1");
+	draw_header("8-Bit Tape Loader      v1.1.2");
 	
 	int pos_y = 22;
 	int pos_x = 4;

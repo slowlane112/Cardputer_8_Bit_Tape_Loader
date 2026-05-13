@@ -11,6 +11,7 @@ extern volatile uint8_t spectrum_player_data_tracker;
 extern volatile bool spectrum_player_load_buffer;
 extern volatile size_t spectrum_player_buffer_overlap;
 extern volatile size_t spectrum_player_pos;
+extern volatile size_t spectrum_player_stop_pos;
 extern volatile bool spectrum_player_process_active;
 extern volatile bool spectrum_player_tape_status; // playing / stopped
 extern volatile bool spectrum_player_user_tape_status;
