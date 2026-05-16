@@ -54,6 +54,26 @@ void graphic_display_text(const char *text, int y_start, int x_start, uint16_t t
 	
 }
 
+void graphic_display_text_underline(const char *text, int y_start, int x_start, uint16_t text_fg_color, uint16_t text_bg_color) 
+{
+	
+	int pos = 0;
+	
+	graphic_display_text(text, y_start, x_start, text_fg_color, text_bg_color);
+	
+	for (int i = 0; text[i] != '\0'; i++) {
+	
+		for (int j = 0; j < 8; j++) {
+		
+			framebuffer[((y_start + 15) * DISPLAY_WIDTH) + x_start + pos] = text_fg_color;
+			
+			pos++;
+		}
+		
+	}
+	
+}
+
 void graphic_display_loading_screen() 
 {
 	

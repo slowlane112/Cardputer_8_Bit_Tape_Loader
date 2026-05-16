@@ -445,7 +445,7 @@ void return_from_file(void) {
 }
 
 void file_browser_main(void) {
-
+	
 	sdcard_status = 0;
 	previous_item[0] = '\0';
 	

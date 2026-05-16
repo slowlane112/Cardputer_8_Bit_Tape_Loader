@@ -40,6 +40,7 @@ static const uint16_t PROGRESS_BAR_OFF_COLOR = 0x00F8;
 static const uint16_t BG_ERROR_COLOR = 0x00F8;
 
 void graphic_display_text(const char *text, int y_start, int x_start, uint16_t text_fg_color, uint16_t text_bg_color);
+void graphic_display_text_underline(const char *text, int y_start, int x_start, uint16_t text_fg_color, uint16_t text_bg_color);
 void graphic_display_loading_screen();
 void draw_header(const char *text);
 void draw_header_error(const char *text);

@@ -1,6 +1,6 @@
 # Cardputer 8-Bit Tape Loader
 
-Load 8-bit computer tape files using a Cardputer Adv.
+Load 8-bit computer tape files using a Cardputer Adv and Cardputer v1.1.
 
 ## Supports<br />
 Commodore<br />ZX Spectrum<br />MSX<br />Acorn<br />BBC Micro<br />Dragon<br />Tandy CoCo<br />Oric<br />
@@ -10,11 +10,19 @@ This project is a work in progress. I assume no responsibility or liability for 
 <img src="assets/cardputer_8_bit_tape_loader_1.jpg" alt="Cardputer 8 Bit Tape Loader" width="600">
 
 ## Wiring Diagram<br />
-<img src="assets/wiring_diagram.png" alt="Wiring Diagram" width="1000">
+### GPIO Header<br />
+<img src="assets/wiring_diagram_gpio.png" alt="Wiring Diagram GPIO Header" width="1000">
+
+### Grove Port<br />
+<img src="assets/wiring_diagram_grove.png" alt="Wiring Diagram Grove" width="1000">
 
 ## Usage<br />
 The app lets you browse and select tape files from the SD card.<br />
 All tape files must be uncompressed tape images.<br />
+
+### Main screen<br />
+Opt: Options<br />
+H: Help<br />
 
 ### File Browser<br />
 Arrow Up: Move up<br />
@@ -38,6 +46,7 @@ Ctrl: Move to last item<br />
 Backspace: Exit<br />
 
 ### Commodore<br />
+Only available when using GPIO Header.<br />
 Supports tap files.<br />
 Press M to enable/disable motor control.<br />
 
@@ -78,7 +87,7 @@ esptool.exe --chip esp32s3 write_flash 0x0 "Cardputer_8_Bit_Tape_Loader_*.bin"
 ./esptool --chip esp32s3 write_flash 0x0 Cardputer_8_Bit_Tape_Loader_*.bin
 ```
 
-## Tape Loader Module<br />
+## Tape Loader Module for GPIO Header<br />
 
 <table>
 <tr>

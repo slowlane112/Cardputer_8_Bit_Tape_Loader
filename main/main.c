@@ -5,6 +5,7 @@
  */
  
 #include <stdio.h>
+#include "esp_task_wdt.h"
 #include "config.h"
 #include "i2c.h"
 #include "display.h"
@@ -13,6 +14,8 @@
 #include "system.h"
 #include "nvs.h"
 #include "state.h"
+#include "option.h"
+#include "help.h"
 #include "file_browser.h"
 #include "commodore_player.h"
 #include "spectrum_player.h"
@@ -27,19 +30,23 @@
 
 void app_main(void)
 {
+
+	esp_task_wdt_deinit();
 	
+    nvs_init();	
+	i2c_init();
 	config_init();
 	display_init();
-	i2c_init();
     keyboard_init();
-    sdcard_init();
-    nvs_init();
+	sdcard_init();
     
     state = STATE_SYSTEM;
 	
     for (;;) {
 		switch (state) {
 			case STATE_SYSTEM:    			system_main();           	break;
+			case STATE_OPTION:    			option_main();           	break;
+			case STATE_HELP:    			help_main();           		break;			
 			case STATE_FILE_BROWSER:   	 	file_browser_main();     	break;
 			case STATE_PLAYER_COMMODORE: 	commodore_player_main(); 	break;
 			case STATE_PLAYER_SPECTRUM: 	spectrum_player_main();  	break;
@@ -49,5 +56,6 @@ void app_main(void)
 			case STATE_PLAYER_ORIC: 		oric_player_main();  		break;			
 		}
 	}
+	
 
 }

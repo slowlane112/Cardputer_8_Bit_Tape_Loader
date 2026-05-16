@@ -3,17 +3,20 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
- 
+
+#include <string.h> 
 #include "freertos/FreeRTOS.h"
 #include "keyboard.h"
 #include "display.h"
 #include "graphic.h"
 #include "file_browser.h"
 #include "state.h"
+#include "config.h"
 
 static bool system_process = false;
 static int selected_item = 0;
 static bool update_display = false;
+static bool display_help_message = false;
 
 const char *systems[] = {
     "Commodore",
@@ -46,28 +49,80 @@ static void display_screen(void) {
 		}
 	}
 	
-	draw_header("8-Bit Tape Loader      v1.1.2");
+	if (display_help_message) {
+		draw_header("8-Bit Tape Loader        Help");
+		
+		int line_start = (DISPLAY_WIDTH * 17) + 204;
+		
+		for (int i = line_start ; i < line_start + 8; i++) {
+			framebuffer[i] = LABEL_COLOR;
+		}
+		
+	}
+	else {
+		draw_header("8-Bit Tape Loader      v1.2.0");
+	}
 	
 	int pos_y = 22;
 	int pos_x = 4;
 	
+
+
+	if (use_gove_port) {
+		pos_y = pos_y + 4;
+	}
+	
+	
+	int system_index = 0;
+	
 	for (int i = 0; i < systems_count; i++) {
 		
-		graphic_display_text((i == selected_item) ? ">" : " ", pos_y, pos_x, LABEL_COLOR, BG_COLOR);
+		if (!(use_gove_port && i == 0)) {
 		
-		graphic_draw_system_icon(pos_y, pos_x + 8 + 2, LABEL_COLOR, BG_COLOR);
+			if (use_gove_port) {
+				pos_y = pos_y + 2;
+			}
+			
+			graphic_display_text((system_index == selected_item) ? ">" : " ", pos_y, pos_x, LABEL_COLOR, BG_COLOR);
+			
+			graphic_draw_system_icon(pos_y, pos_x + 8 + 2, LABEL_COLOR, BG_COLOR);
+			
+			graphic_display_text(systems[i], pos_y, pos_x + (8 * 3) + 4, LABEL_COLOR, BG_COLOR);
+			
+			pos_y = pos_y + 19;
+			
+			system_index++;
 		
-		graphic_display_text(systems[i], pos_y, pos_x + (8 * 3) + 4, LABEL_COLOR, BG_COLOR);
-		
-		pos_y = pos_y + 19;
+		}
+	
     }
 	
 	display_draw();
 	
 }
 
+static int get_system_selected_index() {
+
+    return use_gove_port ? selected_item + 1 : selected_item;
+}
+
 static void button_select(void)
 {
+	system_selected_index = get_system_selected_index();
+	state = STATE_FILE_BROWSER;
+	system_process = false;
+}
+
+static void button_option(void)
+{
+	selected_item = 0;
+	state = STATE_OPTION;
+	system_process = false;
+}
+
+static void button_help(void)
+{
+	state = STATE_HELP;
 	system_process = false;
 }
 
@@ -80,7 +135,7 @@ static void button_item_down(void)
 		}
 	
 		update_display = true;
-	
+
 	}
 
 }
@@ -90,7 +145,9 @@ static void button_item_up(void)
 	
 	if (systems_count > 0) {
 		
-		if (selected_item < systems_count - 1) {
+		int max = use_gove_port ? systems_count - 1 : systems_count;
+		
+		if (selected_item < max - 1) {
 			selected_item = selected_item + 1;
 		}
 	
@@ -116,7 +173,9 @@ static void button_item_skip_end(void)
 {
 	if (systems_count > 0) {
 		
-		selected_item = systems_count - 1;
+		int max = use_gove_port ? systems_count - 1 : systems_count;
+		
+		selected_item = max - 1;
 	
 		update_display = true;
 	
@@ -132,6 +191,12 @@ static void process_keyboard(void)
 	if (key == 0x86) {
         button_select();
     }
+	else if (key == 0x82) { // opt
+        button_option();
+    }
+    else if (key == 'H') { // help
+        button_help();
+    }   
     else if (key == ';') {
 		button_item_down();
 	}
@@ -147,7 +212,12 @@ static void process_keyboard(void)
     
 }
 
+
+
 void system_main(void) {
+	
+	int timer_ticks = 0;
+	display_help_message = false;
 	
 	system_process = true;
 	update_display = true;
@@ -158,10 +228,18 @@ void system_main(void) {
 			update_display = false;
 			display_screen();
 		}
+		
+		if (!display_help_message) {
+            timer_ticks++;
+            if (timer_ticks >= 500) {
+                display_help_message = true;
+                update_display = true;
+            }
+        }
+		
 		vTaskDelay(pdMS_TO_TICKS(10));
 	}
 	
-	system_selected_index = selected_item;
-	state = STATE_FILE_BROWSER;
+
 	
 }
