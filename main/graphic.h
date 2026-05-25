@@ -49,6 +49,7 @@ void graphic_draw_status_indicator(const char *text, bool status, int x_pos, int
 void graphic_draw_progress_bar(size_t pos, size_t total, int x_pos, int y_pos, uint16_t on_color, uint16_t off_color);
 void graphic_display_invalid_file_screen(const char *text);
 void graphic_draw_system_icon(int y_start, int x_start, uint16_t text_fg_color, uint16_t text_bg_color);
+void graphic_draw_battery_level(uint8_t battery_level);
 
 #endif
 

@@ -12,19 +12,21 @@
 #include "file_browser.h"
 #include "state.h"
 #include "config.h"
+#include "battery.h"
 
 static bool system_process = false;
 static int selected_item = 0;
 static bool update_display = false;
 static bool display_help_message = false;
+static uint8_t battery_level = 0;
 
 const char *systems[] = {
-    "Commodore",
-    "ZX Spectrum",
-    "MSX",
-    "Acorn / BBC Micro",
-    "Dragon / Tandy CoCo",
-    "Oric",    
+	"Commodore",
+	"ZX Spectrum",
+	"MSX",
+	"Acorn / BBC Micro",
+	"Dragon / Tandy CoCo",
+	"Oric",    
 };
 
 const int systems_count = sizeof(systems) / sizeof(systems[0]);
@@ -32,11 +34,11 @@ int system_selected_index = 0;
 
 const char* system_get_name(int index)
 {
-    if (index < 0 || index >= systems_count) {
-        return "Unknown";
-    }
+	if (index < 0 || index >= systems_count) {
+		return "Unknown";
+	}
 
-    return systems[index];
+	return systems[index];
 }
 
 static void display_screen(void) {
@@ -53,25 +55,22 @@ static void display_screen(void) {
 		draw_header("8-Bit Tape Loader        Help");
 		
 		int line_start = (DISPLAY_WIDTH * 17) + 204;
-		
 		for (int i = line_start ; i < line_start + 8; i++) {
 			framebuffer[i] = LABEL_COLOR;
 		}
 		
 	}
 	else {
-		draw_header("8-Bit Tape Loader      v1.2.0");
+		draw_header("8-Bit Tape Loader v1.2.1");
+		graphic_draw_battery_level(battery_level);
 	}
 	
 	int pos_y = 22;
 	int pos_x = 4;
-	
-
 
 	if (use_gove_port) {
 		pos_y = pos_y + 4;
 	}
-	
 	
 	int system_index = 0;
 	
@@ -95,7 +94,7 @@ static void display_screen(void) {
 		
 		}
 	
-    }
+	}
 	
 	display_draw();
 	
@@ -103,7 +102,7 @@ static void display_screen(void) {
 
 static int get_system_selected_index() {
 
-    return use_gove_port ? selected_item + 1 : selected_item;
+	return use_gove_port ? selected_item + 1 : selected_item;
 }
 
 static void button_select(void)
@@ -189,15 +188,15 @@ static void process_keyboard(void)
 	char key = keyboard_get_key();
 	
 	if (key == 0x86) {
-        button_select();
-    }
+		button_select();
+	}
 	else if (key == 0x82) { // opt
-        button_option();
-    }
-    else if (key == 'H') { // help
-        button_help();
-    }   
-    else if (key == ';') {
+		button_option();
+	}
+	else if (key == 'H') { // help
+		button_help();
+	}   
+	else if (key == ';') {
 		button_item_down();
 	}
 	else if (key == '.') {
@@ -208,8 +207,8 @@ static void process_keyboard(void)
 	}
 	else if (key == 0x80) { // Ctrl
 		button_item_skip_end();
-	}	
-    
+	}
+	
 }
 
 
@@ -218,9 +217,10 @@ void system_main(void) {
 	
 	int timer_ticks = 0;
 	display_help_message = false;
-	
 	system_process = true;
 	update_display = true;
+	
+	battery_level = battery_get_level();
 	
 	while (system_process) {
 		process_keyboard();
@@ -230,12 +230,12 @@ void system_main(void) {
 		}
 		
 		if (!display_help_message) {
-            timer_ticks++;
-            if (timer_ticks >= 500) {
-                display_help_message = true;
-                update_display = true;
-            }
-        }
+			timer_ticks++;
+			if (timer_ticks >= 500) {
+				display_help_message = true;
+				update_display = true;
+			}
+		}
 		
 		vTaskDelay(pdMS_TO_TICKS(10));
 	}

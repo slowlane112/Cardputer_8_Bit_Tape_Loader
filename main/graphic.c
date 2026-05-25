@@ -25,10 +25,10 @@ void graphic_display_text(const char *text, int y_start, int x_start, uint16_t t
 {
 	
 	uint8_t pixel_font_data = 0;
-    uint8_t pixel_font_pos = 0;
-    int x_pos = 0;
-    int y_pos = 0;
-    int text_pos = 0;
+	uint8_t pixel_font_pos = 0;
+	int x_pos = 0;
+	int y_pos = 0;
+	int text_pos = 0;
 	
 	for (int i = 0; text[i] != '\0'; i++) {
 			
@@ -144,7 +144,7 @@ void draw_footer(graphic_footer_button_t *btn1, graphic_footer_button_t *btn2, g
 	int unit = DISPLAY_WIDTH / 3;
 	int half_unit = unit / 2;
 	
-    for (int y = DISPLAY_HEIGHT - FOOTER_HEIGHT; y < DISPLAY_HEIGHT; y++) {
+	for (int y = DISPLAY_HEIGHT - FOOTER_HEIGHT; y < DISPLAY_HEIGHT; y++) {
 		
 		for (int x = 0; x < DISPLAY_WIDTH; x++) {
 			
@@ -290,51 +290,97 @@ void graphic_draw_system_icon(int y_start, int x_start, uint16_t text_fg_color, 
 		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}		
 	};*/
 	
-    uint8_t system_icon_16x16[32] = {
-        0x00, 0x00,
-        0x0F, 0xF0,
-        0x08, 0x10,
-        0x08, 0x10,
-        0x08, 0x10,
-        0x08, 0x10,
-        0x08, 0x10,
-        0x08, 0x10,
-        0x0F, 0xF0,
-        0x00, 0x00,
-        0x7F, 0xFE,
-        0x40, 0x02,
-        0x40, 0x02,
-        0x7F, 0xFE,
-        0x00, 0x00,
-        0x00, 0x00
-    };
+	uint8_t system_icon_16x16[32] = {
+		0x00, 0x00,
+		0x0F, 0xF0,
+		0x08, 0x10,
+		0x08, 0x10,
+		0x08, 0x10,
+		0x08, 0x10,
+		0x08, 0x10,
+		0x08, 0x10,
+		0x0F, 0xF0,
+		0x00, 0x00,
+		0x7F, 0xFE,
+		0x40, 0x02,
+		0x40, 0x02,
+		0x7F, 0xFE,
+		0x00, 0x00,
+		0x00, 0x00
+	};
 
-    int y = y_start;
+	int y = y_start;
 
-    for (int row = 0; row < 16; row++) {
+	for (int row = 0; row < 16; row++) {
 
-        int x = x_start;
+		int x = x_start;
 
-        uint8_t b0 = system_icon_16x16[row * 2 + 0];
-        uint8_t b1 = system_icon_16x16[row * 2 + 1];
+		uint8_t b0 = system_icon_16x16[row * 2 + 0];
+		uint8_t b1 = system_icon_16x16[row * 2 + 1];
 
-        for (int col = 0; col < 16; col++) {
+		for (int col = 0; col < 16; col++) {
 
-            uint8_t pixel;
+			uint8_t pixel;
 
-            if (col < 8) {
-                pixel = (b0 >> (7 - col)) & 1;
-            } else {
-                pixel = (b1 >> (15 - col)) & 1;
-            }
+			if (col < 8) {
+				pixel = (b0 >> (7 - col)) & 1;
+			} else {
+				pixel = (b1 >> (15 - col)) & 1;
+			}
 
-            framebuffer[(y * DISPLAY_WIDTH) + x] = (pixel == 1) ? text_fg_color : text_bg_color;
+			framebuffer[(y * DISPLAY_WIDTH) + x] = (pixel == 1) ? text_fg_color : text_bg_color;
 
-            x++;
-        }
+			x++;
+		}
 
-        y++;
-    }
+		y++;
+	}
 }
 
+void graphic_draw_battery_level(uint8_t battery_level) {
+	
+	uint16_t level_colour = 0xe007;	//battery_high_color
 
+	if (battery_level == 2 || battery_level == 3) {
+		level_colour = 0xe0ff;	// battery_medium_color
+	}
+	else if (battery_level == 1) {
+		level_colour = 0x00f8;	// battery_low_color
+	}
+
+	uint16_t y_start = 2; 
+	uint16_t height = 16;
+	uint16_t width = 5;
+	uint16_t x_end = DISPLAY_WIDTH - 4;
+	uint16_t x_start = x_end - 33;
+	
+	for (uint8_t seg = 1; seg <= 5; seg++) {
+		
+		if (seg > battery_level) {
+			level_colour = HEADER_BG_COLOR;
+		}
+
+		for (uint8_t y = y_start; y < y_start + height; y++) {
+			
+			for (uint8_t x = x_start; x < x_start + width; x++) {
+			
+				if (y == y_start
+						|| y == y_start + height - 1
+						|| x == x_start
+						|| x == x_start + width - 1) {
+			
+					framebuffer[y * DISPLAY_WIDTH + x] = 0xffff;
+				}
+				else {
+					framebuffer[y * DISPLAY_WIDTH + x] = level_colour;
+				}
+			}
+			
+		
+		}
+	
+		x_start = x_start + 7;
+		
+	}
+	
+}

@@ -22,8 +22,8 @@
 #include "config.h"
 
 typedef enum {
-    LOAD_CHAIN,
-    LOAD_RUN
+	LOAD_CHAIN,
+	LOAD_RUN
 } acorn_load_method_t;
 
 volatile bool acorn_player_file_valid = false;
@@ -43,7 +43,7 @@ static SemaphoreHandle_t rom_done_sem = NULL;
 
 static void load_acorn_use_remote() {
 	uint8_t use_remote = nvs_get_value("an_use_remote", 1);
-    acorn_use_remote = use_remote > 0;
+	acorn_use_remote = use_remote > 0;
 }
 
 static void save_acorn_use_remote() {
@@ -62,13 +62,13 @@ static bool has_data_activity() {
 
 static bool uef_valid(const uint8_t *buf, size_t len) {
 	
-    const char magic[] = "UEF File!";
-    const size_t magic_len = sizeof(magic) - 1;
+	const char magic[] = "UEF File!";
+	const size_t magic_len = sizeof(magic) - 1;
 
-    if (len < magic_len)
-        return false;
+	if (len < magic_len)
+		return false;
 
-    return memcmp(buf, magic, magic_len) == 0;
+	return memcmp(buf, magic, magic_len) == 0;
 }
 
 static acorn_load_method_t get_acorn_load_method()
@@ -231,23 +231,23 @@ static void process_keyboard(void)
 
 static void main_task(void *arg)
 {
-    while (acorn_player_process_active) {
+	while (acorn_player_process_active) {
 		
-        process_keyboard();
-        
-        if (acorn_player_load_buffer) {
+		process_keyboard();
+		
+		if (acorn_player_load_buffer) {
 			acorn_player_load_buffer = false;
 			tape_buffer_load(acorn_player_buffer_overlap);
 		}
-        
-        if (acorn_player_display_ready && !display_transfer_in_progress) {
+		
+		if (acorn_player_display_ready && !display_transfer_in_progress) {
 			display_progress();
 		}
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
-    
-    xSemaphoreGive(rom_done_sem);
-    vTaskDelete(NULL);
+		vTaskDelay(pdMS_TO_TICKS(100));
+	}
+	
+	xSemaphoreGive(rom_done_sem);
+	vTaskDelete(NULL);
 }
 
 static void tape_task(void *arg)
@@ -271,8 +271,8 @@ static void tape_task(void *arg)
 	}
 
  
-    xSemaphoreGive(rom_done_sem);
-    vTaskDelete(NULL);
+	xSemaphoreGive(rom_done_sem);
+	vTaskDelete(NULL);
 }
 
 void acorn_player_main()
@@ -280,40 +280,40 @@ void acorn_player_main()
 	
 	stop_pos = 0;
 	acorn_player_file_valid = false;
-    acorn_player_process_active = true;
-    acorn_player_display_ready = false;
-    
-    load_acorn_use_remote();
-    
-    if (rom_done_sem == NULL) {
-        rom_done_sem = xSemaphoreCreateCounting(2, 0);
+	acorn_player_process_active = true;
+	acorn_player_display_ready = false;
+	
+	load_acorn_use_remote();
+	
+	if (rom_done_sem == NULL) {
+		rom_done_sem = xSemaphoreCreateCounting(2, 0);
 	}
 	
 	xTaskCreateStaticPinnedToCore(
-        main_task,
-        "main",
-        4096,
-        NULL,
-        2,
-        mainStack,
-        &mainTCB,
-        0
-    );
+		main_task,
+		"main",
+		4096,
+		NULL,
+		2,
+		mainStack,
+		&mainTCB,
+		0
+	);
 
-    xTaskCreateStaticPinnedToCore(
-        tape_task,
-        "tape",
-        8192,
-        NULL,
-        5,
-        tapeStack,
-        &tapeTCB,
-        1
-    );
+	xTaskCreateStaticPinnedToCore(
+		tape_task,
+		"tape",
+		8192,
+		NULL,
+		5,
+		tapeStack,
+		&tapeTCB,
+		1
+	);
 	
-    xSemaphoreTake(rom_done_sem, portMAX_DELAY);
-    xSemaphoreTake(rom_done_sem, portMAX_DELAY);
-    
+	xSemaphoreTake(rom_done_sem, portMAX_DELAY);
+	xSemaphoreTake(rom_done_sem, portMAX_DELAY);
+	
 	state = STATE_FILE_BROWSER;
-    
+	
 }
