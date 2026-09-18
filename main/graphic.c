@@ -74,6 +74,22 @@ void graphic_display_text_underline(const char *text, int y_start, int x_start, 
 	
 }
 
+
+void graphic_display_text_first_letter_underline(const char *text, int y_start, int x_start, uint16_t text_fg_color, uint16_t text_bg_color) 
+{
+	size_t len = strlen(text);
+	
+	if (len > 0) {
+		char first[2] = { text[0], '\0' };
+		graphic_display_text_underline(first, y_start, x_start, text_fg_color, text_bg_color);
+	}
+	
+	if (len > 1) {
+		graphic_display_text(text + 1, y_start, x_start + 8, text_fg_color, text_bg_color);
+	}
+	
+}
+
 void graphic_display_loading_screen() 
 {
 	
@@ -178,7 +194,7 @@ void draw_footer(graphic_footer_button_t *btn1, graphic_footer_button_t *btn2, g
 
 }
 
-void graphic_draw_status_indicator(const char *text, bool status, int x_pos, int y_pos, uint16_t on_color, uint16_t off_color) {
+void graphic_draw_status_indicator(const char *text, bool status, int x_pos, int y_pos, uint16_t on_color, uint16_t off_color, bool first_letter_underline) {
 	
 	int indicator_width = 16;
 	int indicator_height = 16;
@@ -216,7 +232,12 @@ void graphic_draw_status_indicator(const char *text, bool status, int x_pos, int
 		
 	}
 	
-	graphic_display_text(text, y_pos, x_pos + 20, control_color, BG_COLOR);
+	if (first_letter_underline) {
+		graphic_display_text_first_letter_underline(text, y_pos, x_pos + 20, control_color, BG_COLOR);
+	}
+	else {
+		graphic_display_text(text, y_pos, x_pos + 20, control_color, BG_COLOR);
+	}
 	
 }
 

@@ -3,7 +3,7 @@
 Load 8-bit computer tape files using a Cardputer Adv and Cardputer v1.1.
 
 ## Supports<br />
-Commodore<br />ZX Spectrum<br />MSX<br />Acorn<br />BBC Micro<br />Dragon<br />Tandy CoCo<br />Oric<br />
+Commodore<br />ZX Spectrum<br />MSX<br />Acorn<br />BBC Micro<br />Dragon<br />Tandy CoCo<br />Oric<br />Amstrad<br />
 
 This project is a work in progress. I assume no responsibility or liability for any errors, omissions, or outcomes resulting from the use of the information provided within this project.
 
@@ -72,6 +72,10 @@ Press R to enable/disable remote control.<br />
 Supports tap files.<br />
 Press R to enable/disable remote control.<br />
 
+### Amstrad<br />
+Supports cdt files.<br />
+Press R to enable/disable remote control.<br />
+
 ## Installation<br />
 Download the .bin file from the releases page.<br />
 Flash the image with esptool: <a href="https://github.com/espressif/esptool/releases" target="_blank">https://github.com/espressif/esptool/releases</a><br />
@@ -123,3 +127,17 @@ You can make a cable using a male 6 pin mini DIN plug and 12 pin edge connector 
 ### 3D Files<br />
 
 View 3D files: [8-Bit Tape Loader 3D Files](/assets/3d_files/)
+
+
+## Build Instructions<br />
+
+The project was developed using ESP-IDF v5.5.2.
+
+Go to the project directory, activate ESP-IDF, then run:
+
+```
+idf.py build
+```
+
+
+

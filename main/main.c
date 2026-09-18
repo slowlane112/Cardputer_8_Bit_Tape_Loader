@@ -23,6 +23,7 @@
 #include "acorn_player.h"
 #include "dragon_player.h"
 #include "oric_player.h"
+#include "amstrad_player.h"
 
 //(Top) → Component config → FreeRTOS → Kernel - (1000) configTICK_RATE_HZ
 //(Top) → Component config → ESP System Settings - CPU frequency (240 MHz)
@@ -46,14 +47,15 @@ void app_main(void)
 		switch (state) {
 			case STATE_SYSTEM:    			system_main();           	break;
 			case STATE_OPTION:    			option_main();           	break;
-			case STATE_HELP:    			help_main();           		break;			
+			case STATE_HELP:    			help_main();           		break;
 			case STATE_FILE_BROWSER:   	 	file_browser_main();     	break;
 			case STATE_PLAYER_COMMODORE: 	commodore_player_main(); 	break;
 			case STATE_PLAYER_SPECTRUM: 	spectrum_player_main();  	break;
 			case STATE_PLAYER_MSX: 			msx_player_main();  		break;
-			case STATE_PLAYER_ACORN: 		acorn_player_main();  		break;									
-			case STATE_PLAYER_DRAGON: 		dragon_player_main();  		break;					
-			case STATE_PLAYER_ORIC: 		oric_player_main();  		break;			
+			case STATE_PLAYER_ACORN: 		acorn_player_main();  		break;
+			case STATE_PLAYER_DRAGON: 		dragon_player_main();  		break;
+			case STATE_PLAYER_ORIC: 		oric_player_main();  		break;
+			case STATE_PLAYER_AMSTRAD: 		amstrad_player_main();  	break;
 		}
 	}
 	

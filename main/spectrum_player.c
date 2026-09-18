@@ -105,7 +105,7 @@ static void display_progress(void) {
 		pos_y = 30;
 		pos_x = 178;
 		
-		graphic_draw_status_indicator("Data", has_data_activity(), pos_x, pos_y, INDICATOR_DATA_COLOR, INDICATOR_OFF_COLOR);
+		graphic_draw_status_indicator("Data", has_data_activity(), pos_x, pos_y, INDICATOR_DATA_COLOR, INDICATOR_OFF_COLOR, false);
 		
 		
 		size_t display_pos = spectrum_player_stop_pos == 0 ? spectrum_player_pos : spectrum_player_stop_pos;

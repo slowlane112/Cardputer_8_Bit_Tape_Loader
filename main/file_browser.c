@@ -82,10 +82,14 @@ static void display_screen(void) {
 		
 		for (size_t i = item_start; i < item_end; i++) {
 			
-			char item_name[30];
-			snprintf(item_name, sizeof(item_name), "%s%s", ((i == selected_item) ? ">" : " "), items.entries[i]->name);
+			//char item_name[30];
+			//snprintf(item_name, sizeof(item_name), "%s%s", ((i == selected_item) ? ">" : " "), items.entries[i]->name);
 
-			graphic_display_text(item_name, text_y_start, text_x_start, ((items.entries[i]->type == SDCARD_DIR) ? FOLDER_COLOR : LABEL_COLOR), BG_COLOR);
+			if (i == selected_item) {
+				graphic_display_text(">", text_y_start - 1, text_x_start, ((items.entries[i]->type == SDCARD_DIR) ? FOLDER_COLOR : LABEL_COLOR), BG_COLOR);
+			}
+
+			graphic_display_text(items.entries[i]->name, text_y_start, text_x_start + 8, ((items.entries[i]->type == SDCARD_DIR) ? FOLDER_COLOR : LABEL_COLOR), BG_COLOR);
 			
 			text_y_start = text_y_start + 19;
 		}
@@ -203,6 +207,9 @@ static void button_load(void)
 				}
 				else if (system_selected_index == 5) {
 					state = STATE_PLAYER_ORIC;
+				}
+				else if (system_selected_index == 6) {
+					state = STATE_PLAYER_AMSTRAD;
 				}				
 				
 				file_browser_process = false;

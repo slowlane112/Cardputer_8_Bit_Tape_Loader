@@ -4,7 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
  
-#include "state.h"
+#ifndef AMSTRAD_TZX_H
+#define AMSTRAD_TZX_H
 
+void amstrad_tzx_main();
 
-state_t state = STATE_SYSTEM;
+#endif
+

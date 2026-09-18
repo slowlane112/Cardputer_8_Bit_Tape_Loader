@@ -46,7 +46,10 @@ void sdcard_system_init(void) {
 		allow_extension_count = 1;
     } else if (system_selected_index == 5) {
         allow_extension[0] = ".tap";
-		allow_extension_count = 1;		
+		allow_extension_count = 1;
+    } else if (system_selected_index == 6) {
+        allow_extension[0] = ".cdt";
+		allow_extension_count = 1;
 	}
 }
 
