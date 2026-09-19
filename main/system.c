@@ -19,6 +19,7 @@ static int selected_item = 0;
 static bool update_display = false;
 static bool display_help_message = false;
 static uint8_t battery_level = 0;
+static int items_per_page = 6;
 
 const char *systems[] = {
 	"Commodore",
@@ -26,10 +27,13 @@ const char *systems[] = {
 	"MSX",
 	"Acorn / BBC Micro",
 	"Dragon / Tandy CoCo",
-	"Oric",    
+	"Oric",
+	"Amstrad"
 };
-
 const int systems_count = sizeof(systems) / sizeof(systems[0]);
+const char **display_systems;
+int display_systems_count = 0;
+
 int system_selected_index = 0;
 
 const char* system_get_name(int index)
@@ -61,38 +65,31 @@ static void display_screen(void) {
 		
 	}
 	else {
-		draw_header("8-Bit Tape Loader v1.2.1");
+		draw_header("8-Bit Tape Loader v1.2.2");
 		graphic_draw_battery_level(battery_level);
+	}
+	
+	int current_page = selected_item / items_per_page;
+		
+	int item_start = current_page * items_per_page;
+	int item_end = item_start + items_per_page;
+	
+	if (item_end > display_systems_count) {
+		item_end = display_systems_count;
 	}
 	
 	int pos_y = 22;
 	int pos_x = 4;
 
-	if (use_gove_port) {
-		pos_y = pos_y + 4;
-	}
-	
-	int system_index = 0;
-	
-	for (int i = 0; i < systems_count; i++) {
+	for (int i = item_start; i < item_end; i++) {
 		
-		if (!(use_gove_port && i == 0)) {
+		graphic_display_text((i == selected_item) ? ">" : " ", pos_y - 2, pos_x, LABEL_COLOR, BG_COLOR);
+			
+		graphic_draw_system_icon(pos_y, pos_x + 8 + 2, LABEL_COLOR, BG_COLOR);
 		
-			if (use_gove_port) {
-				pos_y = pos_y + 2;
-			}
-			
-			graphic_display_text((system_index == selected_item) ? ">" : " ", pos_y, pos_x, LABEL_COLOR, BG_COLOR);
-			
-			graphic_draw_system_icon(pos_y, pos_x + 8 + 2, LABEL_COLOR, BG_COLOR);
-			
-			graphic_display_text(systems[i], pos_y, pos_x + (8 * 3) + 4, LABEL_COLOR, BG_COLOR);
-			
-			pos_y = pos_y + 19;
-			
-			system_index++;
+		graphic_display_text(display_systems[i], pos_y, pos_x + (8 * 3) + 4, LABEL_COLOR, BG_COLOR);
 		
-		}
+		pos_y = pos_y + 19;
 	
 	}
 	
@@ -127,10 +124,13 @@ static void button_help(void)
 
 static void button_item_down(void)
 {
-	if (systems_count > 0) {
+	if (display_systems_count > 0) {
 		
 		if (selected_item > 0) {
 			selected_item = selected_item - 1;
+		}
+		else {
+			selected_item = display_systems_count - 1;
 		}
 	
 		update_display = true;
@@ -144,10 +144,11 @@ static void button_item_up(void)
 	
 	if (systems_count > 0) {
 		
-		int max = use_gove_port ? systems_count - 1 : systems_count;
-		
-		if (selected_item < max - 1) {
+		if (selected_item < display_systems_count - 1) {
 			selected_item = selected_item + 1;
+		}
+		else {
+			selected_item = 0;
 		}
 	
 		update_display = true;
@@ -158,7 +159,7 @@ static void button_item_up(void)
 
 static void button_item_skip_start(void)
 {
-	if (systems_count > 0) {
+	if (display_systems_count > 0) {
 		
 		selected_item = 0;
 	
@@ -170,11 +171,9 @@ static void button_item_skip_start(void)
 
 static void button_item_skip_end(void)
 {
-	if (systems_count > 0) {
+	if (display_systems_count > 0) {
 		
-		int max = use_gove_port ? systems_count - 1 : systems_count;
-		
-		selected_item = max - 1;
+		selected_item = display_systems_count - 1;
 	
 		update_display = true;
 	
@@ -211,9 +210,15 @@ static void process_keyboard(void)
 	
 }
 
-
-
 void system_main(void) {
+	
+	if (use_gove_port) { 
+		display_systems = systems + 1;
+		display_systems_count = systems_count - 1; 
+	} else {
+		display_systems = systems;
+		display_systems_count = systems_count;
+	}
 	
 	int timer_ticks = 0;
 	display_help_message = false;

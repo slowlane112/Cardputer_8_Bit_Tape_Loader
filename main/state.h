@@ -17,10 +17,12 @@ typedef enum {
     STATE_PLAYER_MSX,
     STATE_PLAYER_ACORN,
     STATE_PLAYER_DRAGON,
-    STATE_PLAYER_ORIC   
-} State;
+    STATE_PLAYER_ORIC,
+	STATE_PLAYER_AMSTRAD
+	
+} state_t;
 
-extern State state;
+extern state_t state;
 
 #endif
 

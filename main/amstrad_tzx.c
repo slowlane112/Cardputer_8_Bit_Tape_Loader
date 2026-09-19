@@ -5,7 +5,7 @@
  */
  
 #include "driver/gpio.h"
-#include "spectrum_player.h"
+#include "amstrad_player.h"
 #include "config.h"
 #include "freertos/FreeRTOS.h"
 #include "soc/gpio_struct.h"
@@ -31,8 +31,8 @@ static uint16_t play_block_count = 0;
 static bool test_mode = false;
 
 static IRAM_ATTR void initial_data(size_t start_pos) {
-	tape_buffer_load_initial(spectrum_player_buffer_overlap, start_pos);
-	spectrum_player_load_buffer = true;
+	tape_buffer_load_initial(amstrad_player_buffer_overlap, start_pos);
+	amstrad_player_load_buffer = true;
 	if (test_mode) {
 		esp_rom_delay_us(2000 * 1000);
 	}
@@ -40,11 +40,11 @@ static IRAM_ATTR void initial_data(size_t start_pos) {
 
 static IRAM_ATTR void ensure_data() {
     
-    if (tape_buffer_1_size == TAPE_BUFFER_SIZE && (spectrum_player_pos - tape_buffer_1_offset) > tape_buffer_1_size - spectrum_player_buffer_overlap) {
+    if (tape_buffer_1_size == TAPE_BUFFER_SIZE && (amstrad_player_pos - tape_buffer_1_offset) > tape_buffer_1_size - amstrad_player_buffer_overlap) {
 		tape_buffer_swap();
 		loop_block_did_buffer_swap = true;
 		if (loop_block_count == 0) { // dont do while in loop_block
-			spectrum_player_load_buffer = true;
+			amstrad_player_load_buffer = true;
 		}
 		if (test_mode) {
 			esp_rom_delay_us(2000 * 1000);
@@ -58,12 +58,11 @@ static IRAM_ATTR inline uint32_t tstates_to_us(uint16_t t_states)
     return (uint32_t)(((t_states * 2) + 4) / 7);
 }
 
-
 static IRAM_ATTR void low() {
 	
-	if (test_mode == false && spectrum_player_user_tape_status) {
+	if (test_mode == false && amstrad_player_user_tape_status) {
 		
-		spectrum_player_data_tracker++;
+		amstrad_player_data_tracker++;
 		
 		out_level = 0;
 		GPIO.out_w1tc = AUDIO_OUT_PIN_MASK;
@@ -73,9 +72,9 @@ static IRAM_ATTR void low() {
 
 static IRAM_ATTR void high() {
 	
-	 if (test_mode == false && spectrum_player_user_tape_status) {
+	 if (test_mode == false && amstrad_player_user_tape_status) {
 		
-		spectrum_player_data_tracker++;
+		amstrad_player_data_tracker++;
 		
 		out_level = 1;
 		GPIO.out_w1ts = AUDIO_OUT_PIN_MASK; 
@@ -85,9 +84,9 @@ static IRAM_ATTR void high() {
 
 static IRAM_ATTR void flip() {
     
-    if (test_mode == false && spectrum_player_user_tape_status) {
+    if (test_mode == false && amstrad_player_user_tape_status) {
 		
-		spectrum_player_data_tracker++;
+		amstrad_player_data_tracker++;
 		
 		out_level ^= 1;
 		if (out_level) {
@@ -102,18 +101,18 @@ static IRAM_ATTR void flip() {
 
 static IRAM_ATTR void pulse_same(uint32_t us) {
 	
-	if (test_mode == false && spectrum_player_user_tape_status) {
+	if (test_mode == false && amstrad_player_user_tape_status) {
 		
-		spectrum_player_data_tracker++;
+		amstrad_player_data_tracker++;
 		esp_rom_delay_us(us);
 	}
 }
 
 static IRAM_ATTR void pulse_low(uint32_t us) {
 	
-	if (test_mode == false && spectrum_player_user_tape_status) {
+	if (test_mode == false && amstrad_player_user_tape_status) {
 		
-		spectrum_player_data_tracker++;
+		amstrad_player_data_tracker++;
 		
 		out_level = 0;
 		GPIO.out_w1tc = AUDIO_OUT_PIN_MASK;
@@ -123,9 +122,9 @@ static IRAM_ATTR void pulse_low(uint32_t us) {
 
 static IRAM_ATTR void pulse_high(uint32_t us) {
 	
-	if (test_mode == false && spectrum_player_user_tape_status) {
+	if (test_mode == false && amstrad_player_user_tape_status) {
 		
-		spectrum_player_data_tracker++;
+		amstrad_player_data_tracker++;
 		
 		out_level = 1;
 		GPIO.out_w1ts = AUDIO_OUT_PIN_MASK;
@@ -135,9 +134,9 @@ static IRAM_ATTR void pulse_high(uint32_t us) {
 
 static IRAM_ATTR void pulse(uint32_t us) {
     
-    if (test_mode == false && spectrum_player_user_tape_status) {
+    if (test_mode == false && amstrad_player_user_tape_status) {
 		
-		spectrum_player_data_tracker++;
+		amstrad_player_data_tracker++;
 		
 		out_level ^= 1;
 		if (out_level) {
@@ -153,7 +152,7 @@ static IRAM_ATTR void pulse(uint32_t us) {
 
 static IRAM_ATTR void pause(uint16_t pause_length_ms) {
 
-	if (test_mode == false && spectrum_player_user_tape_status) {
+	if (test_mode == false && amstrad_player_user_tape_status) {
 		
 		flip();
 		esp_rom_delay_us(1000);
@@ -168,9 +167,9 @@ static IRAM_ATTR void pause(uint16_t pause_length_ms) {
 }
 
 static void stop(void) {
-	spectrum_player_pos = last_block_pos;
-	spectrum_player_tape_status = false;
-	spectrum_player_user_tape_status = false;
+	amstrad_player_pos = last_block_pos;
+	amstrad_player_tape_status = false;
+	amstrad_player_user_tape_status = false;
 }
 
 static IRAM_ATTR uint16_t read_word(size_t pos) {
@@ -196,12 +195,12 @@ static IRAM_ATTR uint32_t read_uint32(size_t pos) {
 
 static IRAM_ATTR void block_10_standard_speed_data_block(void) {
 	
-	uint16_t pause_ms = read_word(spectrum_player_pos);
-	uint16_t data_length = read_word(spectrum_player_pos + 2);
+	uint16_t pause_ms = read_word(amstrad_player_pos);
+	uint16_t data_length = read_word(amstrad_player_pos + 2);
 	
-	spectrum_player_pos += 4; 
+	amstrad_player_pos += 4; 
 	
-	uint8_t flag_byte = read_byte(spectrum_player_pos);
+	uint8_t flag_byte = read_byte(amstrad_player_pos);
 	int pilot_pulses = flag_byte < 128 ? PILOT_HEADER_PULSES : PILOT_DATA_PULSES;
 
 	// Pilot tone
@@ -218,7 +217,7 @@ static IRAM_ATTR void block_10_standard_speed_data_block(void) {
 		
 		ensure_data();
 		
-		uint8_t data_byte = read_byte(spectrum_player_pos);
+		uint8_t data_byte = read_byte(amstrad_player_pos);
 		
 		for (int b = 7; b >= 0; b--) {
 			if (data_byte & (1 << b)) {
@@ -228,7 +227,7 @@ static IRAM_ATTR void block_10_standard_speed_data_block(void) {
 			}
 		}
 		
-		spectrum_player_pos++;
+		amstrad_player_pos++;
 	}
 
 	// Pause
@@ -240,17 +239,17 @@ static IRAM_ATTR void block_10_standard_speed_data_block(void) {
 
 static IRAM_ATTR void block_11_turbo_speed_data_block(void) {
 	
-	uint16_t pilot_pulse = read_word(spectrum_player_pos);
-	uint16_t sync1_pulse = read_word(spectrum_player_pos + 2);
-	uint16_t sync2_pulse = read_word(spectrum_player_pos + 4);
-	uint16_t bit0_pulse  = read_word(spectrum_player_pos + 6);
-	uint16_t bit1_pulse  = read_word(spectrum_player_pos + 8);
-	uint16_t pilot_count = read_word(spectrum_player_pos + 10);
-	uint8_t last_bits = read_byte(spectrum_player_pos + 12);
-	uint16_t pause_ms = read_word(spectrum_player_pos + 13);
-	uint32_t data_length = read_uint24(spectrum_player_pos + 15);
+	uint16_t pilot_pulse = read_word(amstrad_player_pos);
+	uint16_t sync1_pulse = read_word(amstrad_player_pos + 2);
+	uint16_t sync2_pulse = read_word(amstrad_player_pos + 4);
+	uint16_t bit0_pulse  = read_word(amstrad_player_pos + 6);
+	uint16_t bit1_pulse  = read_word(amstrad_player_pos + 8);
+	uint16_t pilot_count = read_word(amstrad_player_pos + 10);
+	uint8_t last_bits = read_byte(amstrad_player_pos + 12);
+	uint16_t pause_ms = read_word(amstrad_player_pos + 13);
+	uint32_t data_length = read_uint24(amstrad_player_pos + 15);
 	
-	spectrum_player_pos += 18;
+	amstrad_player_pos += 18;
 	
 	uint32_t pilot_us = tstates_to_us(pilot_pulse);
 	uint32_t s1_us    = tstates_to_us(sync1_pulse);
@@ -272,7 +271,7 @@ static IRAM_ATTR void block_11_turbo_speed_data_block(void) {
 
 		ensure_data();
 
-		uint8_t data_byte = read_byte(spectrum_player_pos);
+		uint8_t data_byte = read_byte(amstrad_player_pos);
 
 		int bits_to_pulse = (i == data_length - 1) ? (last_bits == 0 ? 8 : last_bits) : 8;
 
@@ -284,7 +283,7 @@ static IRAM_ATTR void block_11_turbo_speed_data_block(void) {
 			}
 		}
 
-		spectrum_player_pos++;
+		amstrad_player_pos++;
 	}
 
 	// Pause
@@ -296,10 +295,10 @@ static IRAM_ATTR void block_11_turbo_speed_data_block(void) {
 
 static IRAM_ATTR void block_12_pure_tone(void) {
 	
-	uint16_t pulse_length = read_word(spectrum_player_pos);
-	uint16_t count = read_word(spectrum_player_pos + 2);
+	uint16_t pulse_length = read_word(amstrad_player_pos);
+	uint16_t count = read_word(amstrad_player_pos + 2);
 
-	spectrum_player_pos += 4;
+	amstrad_player_pos += 4;
 	
 	uint32_t pulse_us = tstates_to_us(pulse_length);
 	
@@ -312,17 +311,17 @@ static IRAM_ATTR void block_12_pure_tone(void) {
 
 static IRAM_ATTR void block_13_pulse_sequence(void) {
 	
-	uint8_t count = read_byte(spectrum_player_pos);
+	uint8_t count = read_byte(amstrad_player_pos);
 				
-	spectrum_player_pos++;
+	amstrad_player_pos++;
 	
 	for (uint8_t i = 0; i < count; i++) {
 		
 		ensure_data();
 		
-		uint16_t pulse_length = read_word(spectrum_player_pos);
+		uint16_t pulse_length = read_word(amstrad_player_pos);
 	
-		spectrum_player_pos += 2;
+		amstrad_player_pos += 2;
 
 		uint32_t pulse_us = tstates_to_us(pulse_length);
 	
@@ -333,13 +332,13 @@ static IRAM_ATTR void block_13_pulse_sequence(void) {
 
 static IRAM_ATTR void block_14_pure_data_block(void) {
 	
-	uint16_t bit0_pulse  = read_word(spectrum_player_pos);
-	uint16_t bit1_pulse  = read_word(spectrum_player_pos + 2);
-	uint8_t last_bits = read_byte(spectrum_player_pos + 4);
-	uint16_t pause_ms = read_word(spectrum_player_pos + 5);
-	uint32_t data_length = read_uint24(spectrum_player_pos + 7);
-
-	spectrum_player_pos += 10;
+	uint16_t bit0_pulse  = read_word(amstrad_player_pos);
+	uint16_t bit1_pulse  = read_word(amstrad_player_pos + 2);
+	uint8_t last_bits = read_byte(amstrad_player_pos + 4);
+	uint16_t pause_ms = read_word(amstrad_player_pos + 5);
+	uint32_t data_length = read_uint24(amstrad_player_pos + 7);
+	
+	amstrad_player_pos += 10;
 
 	uint32_t b0_us    = tstates_to_us(bit0_pulse);
 	uint32_t b1_us    = tstates_to_us(bit1_pulse);
@@ -349,7 +348,7 @@ static IRAM_ATTR void block_14_pure_data_block(void) {
 
 		ensure_data();
 
-		uint8_t data_byte = read_byte(spectrum_player_pos);
+		uint8_t data_byte = read_byte(amstrad_player_pos);
 		int bits_to_pulse = (i == data_length - 1) ? (last_bits == 0 ? 8 : last_bits) : 8;
 
 		for (int b = 7; b >= (8 - bits_to_pulse); b--) {
@@ -360,7 +359,7 @@ static IRAM_ATTR void block_14_pure_data_block(void) {
 			}
 		}
 		
-		spectrum_player_pos++;
+		amstrad_player_pos++;
 	}
 
 
@@ -372,11 +371,11 @@ static IRAM_ATTR void block_14_pure_data_block(void) {
 
 static IRAM_ATTR void block_15_direct_recording(void) {
 
-    uint16_t t_states_per_sample = read_word(spectrum_player_pos);
-    uint16_t pause_ms = read_word(spectrum_player_pos + 2);
-    uint8_t last_bits = read_byte(spectrum_player_pos + 4);
-    uint32_t data_length = read_uint24(spectrum_player_pos + 5);
-    spectrum_player_pos += 8;
+    uint16_t t_states_per_sample = read_word(amstrad_player_pos);
+    uint16_t pause_ms = read_word(amstrad_player_pos + 2);
+    uint8_t last_bits = read_byte(amstrad_player_pos + 4);
+    uint32_t data_length = read_uint24(amstrad_player_pos + 5);
+    amstrad_player_pos += 8;
 
     uint32_t sample_duration_us = tstates_to_us(t_states_per_sample);
 
@@ -384,7 +383,7 @@ static IRAM_ATTR void block_15_direct_recording(void) {
 		
 		ensure_data();
 
-		uint8_t data_byte = read_byte(spectrum_player_pos);
+		uint8_t data_byte = read_byte(amstrad_player_pos);
 		
 		int bits_to_pulse = (i == data_length - 1) ? (last_bits == 0 ? 8 : last_bits) : 8;
 
@@ -396,7 +395,7 @@ static IRAM_ATTR void block_15_direct_recording(void) {
 			}
 		}
 		
-		spectrum_player_pos++;
+		amstrad_player_pos++;
 	}
 
     if (pause_ms > 0) {
@@ -406,16 +405,16 @@ static IRAM_ATTR void block_15_direct_recording(void) {
 
 static IRAM_ATTR void block_18_csw_recording(void) {
 	
-	uint32_t block_len = read_uint32(spectrum_player_pos); 
+	uint32_t block_len = read_uint32(amstrad_player_pos); 
 	
-	size_t block_end = spectrum_player_pos + 4 + block_len;
+	size_t block_end = amstrad_player_pos + 4 + block_len;
 	
-	uint16_t pause_ms = read_word(spectrum_player_pos + 4);
-	uint32_t sample_rate = read_uint24(spectrum_player_pos + 6);
-	uint8_t compression = read_byte(spectrum_player_pos + 9);
-	uint32_t total_pulses = read_uint32(spectrum_player_pos + 10);
+	uint16_t pause_ms = read_word(amstrad_player_pos + 4);
+	uint32_t sample_rate = read_uint24(amstrad_player_pos + 6);
+	uint8_t compression = read_byte(amstrad_player_pos + 9);
+	uint32_t total_pulses = read_uint32(amstrad_player_pos + 10);
 	
-	spectrum_player_pos += 14;
+	amstrad_player_pos += 14;
 	
 	if (compression == 1) { //RLE
 	
@@ -424,12 +423,12 @@ static IRAM_ATTR void block_18_csw_recording(void) {
 			ensure_data();
 			
 			uint32_t pulse_count = 0;
-			uint8_t b = read_byte(spectrum_player_pos);
-			spectrum_player_pos++;
+			uint8_t b = read_byte(amstrad_player_pos);
+			amstrad_player_pos++;
 			
 			if (b == 0) {
-				pulse_count = read_uint32(spectrum_player_pos);
-				spectrum_player_pos += 4;
+				pulse_count = read_uint32(amstrad_player_pos);
+				amstrad_player_pos += 4;
 			} else {
 				pulse_count = b;
 			}
@@ -452,7 +451,7 @@ static IRAM_ATTR void block_18_csw_recording(void) {
 
 			for (uint32_t i = 0; i < comp_payload_len; i++) {
 				ensure_data();
-				comp[i] = read_byte(spectrum_player_pos++);
+				comp[i] = read_byte(amstrad_player_pos++);
 			}
 
 			// skip 2-byte zlib header
@@ -487,7 +486,7 @@ static IRAM_ATTR void block_18_csw_recording(void) {
 	}
 
 
-     spectrum_player_pos = block_end;
+     amstrad_player_pos = block_end;
 
     if (pause_ms > 0) {
         pause(pause_ms);
@@ -497,17 +496,17 @@ static IRAM_ATTR void block_18_csw_recording(void) {
 
 static IRAM_ATTR void block_19_generalized_data_block(void) {
     
-    uint16_t pause_ms = read_word(spectrum_player_pos + 4);
-    uint32_t totp = read_uint32(spectrum_player_pos + 6);
-    uint8_t npp = read_byte(spectrum_player_pos + 10);
-    uint8_t asp_raw = read_byte(spectrum_player_pos + 11);
+    uint16_t pause_ms = read_word(amstrad_player_pos + 4);
+    uint32_t totp = read_uint32(amstrad_player_pos + 6);
+    uint8_t npp = read_byte(amstrad_player_pos + 10);
+    uint8_t asp_raw = read_byte(amstrad_player_pos + 11);
     uint16_t asp = (asp_raw == 0) ? 256 : asp_raw;
-    uint32_t totd = read_uint32(spectrum_player_pos + 12);
-    uint8_t npd = read_byte(spectrum_player_pos + 16);
-    uint8_t asd_raw = read_byte(spectrum_player_pos + 17);
+    uint32_t totd = read_uint32(amstrad_player_pos + 12);
+    uint8_t npd = read_byte(amstrad_player_pos + 16);
+    uint8_t asd_raw = read_byte(amstrad_player_pos + 17);
     uint16_t asd = (asd_raw == 0) ? 256 : asd_raw;
 
-    spectrum_player_pos += 18;
+    amstrad_player_pos += 18;
 
     // pilot section
     if (totp > 0) {
@@ -515,14 +514,14 @@ static IRAM_ATTR void block_19_generalized_data_block(void) {
         uint8_t pilot_alpha[alpha_size]; 
         for (size_t j = 0; j < alpha_size; j++) {
 			ensure_data();
-            pilot_alpha[j] = read_byte(spectrum_player_pos++);
+            pilot_alpha[j] = read_byte(amstrad_player_pos++);
         }
         
         for (uint32_t i = 0; i < totp; i++) {
 			ensure_data();
-            uint8_t sym_idx = read_byte(spectrum_player_pos++);
-            uint16_t repeats = read_word(spectrum_player_pos); 
-            spectrum_player_pos += 2;
+            uint8_t sym_idx = read_byte(amstrad_player_pos++);
+            uint16_t repeats = read_word(amstrad_player_pos); 
+            amstrad_player_pos += 2;
             
             uint8_t* sym_data = &pilot_alpha[sym_idx * (1 + (npp * 2))];
             uint8_t edge_type = sym_data[0];
@@ -561,7 +560,7 @@ static IRAM_ATTR void block_19_generalized_data_block(void) {
         uint8_t data_alpha[alpha_size];
         for (size_t j = 0; j < alpha_size; j++) {
 			ensure_data();
-            data_alpha[j] = read_byte(spectrum_player_pos++);
+            data_alpha[j] = read_byte(amstrad_player_pos++);
         }
 
         uint8_t bits_per_symbol = 0;
@@ -579,7 +578,7 @@ static IRAM_ATTR void block_19_generalized_data_block(void) {
                 
                 if ((bit_offset & 7) == 0) {
 					ensure_data();
-                    current_byte = read_byte(spectrum_player_pos++);
+                    current_byte = read_byte(amstrad_player_pos++);
                 }
                 uint8_t bit = (current_byte >> (7 - (bit_offset & 7))) & 1;
                 sym_idx = (sym_idx << 1) | bit;
@@ -623,9 +622,9 @@ static IRAM_ATTR void block_19_generalized_data_block(void) {
 
 static IRAM_ATTR void block_20_pause(void) {
 	
-	uint16_t pause_ms = read_word(spectrum_player_pos);
+	uint16_t pause_ms = read_word(amstrad_player_pos);
 	
-	spectrum_player_pos += 2;
+	amstrad_player_pos += 2;
 			
 	if (pause_ms == 0) {
 		
@@ -634,9 +633,9 @@ static IRAM_ATTR void block_20_pause(void) {
 			// do not stop if 1st block after pressing play
 		
 			// set to next block
-			last_block_pos = spectrum_player_pos;
+			last_block_pos = amstrad_player_pos;
 			// set to stopping
-			spectrum_player_user_tape_status = false;
+			amstrad_player_user_tape_status = false;
 			
 		}
 	}
@@ -648,20 +647,20 @@ static IRAM_ATTR void block_20_pause(void) {
 
 static IRAM_ATTR void block_21_group_start(void) {
 	
-	uint8_t length = read_byte(spectrum_player_pos);
+	uint8_t length = read_byte(amstrad_player_pos);
 	
-	spectrum_player_pos += (1 + length);
+	amstrad_player_pos += (1 + length);
 				
 }
 
 static IRAM_ATTR void block_24_loop_start(void) {
 	
-	loop_block_count = read_word(spectrum_player_pos);
+	loop_block_count = read_word(amstrad_player_pos);
 	
-	spectrum_player_pos += 2;
+	amstrad_player_pos += 2;
 	
 	loop_block_did_buffer_swap = false;
-	loop_block_start_pos = spectrum_player_pos;
+	loop_block_start_pos = amstrad_player_pos;
 				
 }
 
@@ -674,7 +673,7 @@ static IRAM_ATTR void block_25_loop_end(void) {
 			
 	if (loop_block_count > 0) {
 		
-		spectrum_player_pos = loop_block_start_pos;
+		amstrad_player_pos = loop_block_start_pos;
 		
 		if (loop_block_did_buffer_swap) {
 			tape_buffer_swap();
@@ -687,26 +686,15 @@ static IRAM_ATTR void block_25_loop_end(void) {
 
 static IRAM_ATTR void block_2A_stop_tape_48k(void) {
 	
-	uint32_t length = read_uint32(spectrum_player_pos);
+	uint32_t length = read_uint32(amstrad_player_pos);
 			
-	spectrum_player_pos += (4 + length);
+	amstrad_player_pos += (4 + length);
 	
-	if (play_block_count > 1 && spectrum_player_system_type == 0) { //48k
-		
-		// do not stop if 1st block after pressing play
-		
-		// set to next block
-		last_block_pos = spectrum_player_pos;
-		// set to stopping
-		spectrum_player_user_tape_status = false;
-	
-	}
-				
 }
 
 static IRAM_ATTR void block_2B_set_signal_level(void) {
 	
-	uint8_t level = read_byte(spectrum_player_pos + 4);
+	uint8_t level = read_byte(amstrad_player_pos + 4);
 	
 	if (level == 1) {
 		high();
@@ -715,55 +703,55 @@ static IRAM_ATTR void block_2B_set_signal_level(void) {
 		low();
 	}
 			
-	spectrum_player_pos += 5;
+	amstrad_player_pos += 5;
 	
 }
 
 static IRAM_ATTR void block_30_text_description(void) {
 	
-	uint8_t length = read_byte(spectrum_player_pos);
+	uint8_t length = read_byte(amstrad_player_pos);
 			
-	spectrum_player_pos += (1 + length);
+	amstrad_player_pos += (1 + length);
 		
 }
 
 static IRAM_ATTR void block_31_message_block(void) {
 	
 	// second byte
-	uint8_t length = read_byte(spectrum_player_pos + 1);
+	uint8_t length = read_byte(amstrad_player_pos + 1);
 			
-	spectrum_player_pos += (2 + length);
+	amstrad_player_pos += (2 + length);
 	
 }
 
 static IRAM_ATTR void block_32_archive_info(void) {
 	
-	uint16_t length = read_word(spectrum_player_pos);
+	uint16_t length = read_word(amstrad_player_pos);
 			
-	spectrum_player_pos += (2 + length);
+	amstrad_player_pos += (2 + length);
 	
 }
 
 static IRAM_ATTR void block_33_hardware_type(void) {
 	
-	uint8_t length = read_byte(spectrum_player_pos);
+	uint8_t length = read_byte(amstrad_player_pos);
 			
-	spectrum_player_pos += (1 + (length * 3));
+	amstrad_player_pos += (1 + (length * 3));
 	
 }
 
 static IRAM_ATTR void block_35_custom_info_block(void) {
 	
 	// offset 0x10 - 16
-	uint32_t length = read_uint32(spectrum_player_pos + 16);
+	uint32_t length = read_uint32(amstrad_player_pos + 16);
 	
-	spectrum_player_pos += (20 + length);
+	amstrad_player_pos += (20 + length);
 	
 }
 
 static IRAM_ATTR void block_5A_glue_block(void) {
 	
-	spectrum_player_pos += 9;
+	amstrad_player_pos += 9;
 	
 }
 
@@ -771,25 +759,33 @@ static IRAM_ATTR void play(void) {
 	
 	play_block_count = 0;
 
-	if (spectrum_player_pos == 0) { // skip header
-		spectrum_player_pos = 10;
+	if (amstrad_player_pos == 0) { // skip header
+		amstrad_player_pos = 10;
 	}
 	
 	low();
 	
 	esp_rom_delay_us(10000);
 
-	while (spectrum_player_pos < file_browser_file_len) {
+	while (amstrad_player_pos < file_browser_file_len) {
 		
 		ensure_data();
 		
-		last_block_pos = spectrum_player_pos;
+		while (amstrad_use_remote && gpio_get_level(REMOTE_PIN) == 1) {
+			if (!amstrad_player_user_tape_status) {
+				break;
+			}
+			vTaskDelay(pdMS_TO_TICKS(1));
+		}
+			
 		
-		uint8_t block_id = tape_buffer_1[spectrum_player_pos - tape_buffer_1_offset];
-		spectrum_player_pos++;
+		last_block_pos = amstrad_player_pos;
+		
+		uint8_t block_id = tape_buffer_1[amstrad_player_pos - tape_buffer_1_offset];
+		amstrad_player_pos++;
 		play_block_count++;
 		
-		//printf("Block: 0x%02X | Pos: %u (0x%X)\n", block_id, spectrum_player_pos - 1, spectrum_player_pos - 1);
+		//printf("Block: 0x%02X | Pos: %u (0x%X)\n", block_id, amstrad_player_pos - 1, amstrad_player_pos - 1);
 
 		switch (block_id) {
 			
@@ -911,7 +907,7 @@ static IRAM_ATTR void play(void) {
 				
 				block_35_custom_info_block();
 				
-				break;
+				break;		
 
 			case 0x5A: // ID 5A - Glue block
 				
@@ -921,21 +917,21 @@ static IRAM_ATTR void play(void) {
 				
 			default:
 			
-				//printf("block_id not handled: 0x%02X\n", block_id);
+			//printf("block_id not handled: 0x%02X\n", block_id);
 		}
 
 
-		if (!spectrum_player_user_tape_status) { // stopping
-			if (spectrum_player_stop_pos == spectrum_player_pos) {
+		if (!amstrad_player_user_tape_status) { // stopping
+			if (amstrad_player_stop_pos == amstrad_player_pos) {
 				// person stopped at end of last block. Maybe during pause.
-				last_block_pos = spectrum_player_pos;
+				last_block_pos = amstrad_player_pos;
 			}
 			break;
 		}
 
 		
-		if (spectrum_player_pos == file_browser_file_len) { // reached end
-			last_block_pos = spectrum_player_pos;
+		if (amstrad_player_pos == file_browser_file_len) { // reached end
+			last_block_pos = amstrad_player_pos;
 		}
 		
 	}
@@ -959,26 +955,26 @@ static IRAM_ATTR void play(void) {
 	
 }
 
-void spectrum_tzx_main() {
+void amstrad_tzx_main() {
 	
 	out_level = 0;
-	spectrum_player_buffer_overlap = 32;
-	spectrum_player_pos = 0;
-	spectrum_player_tape_status = false;
+	amstrad_player_buffer_overlap = 32;
+	amstrad_player_pos = 0;
+	amstrad_player_tape_status = false;
 	
 	gpio_set_level(AUDIO_OUT_PIN, out_level);
 	
-	while (spectrum_player_process_active) {
+	while (amstrad_player_process_active) {
 		
-		if (!spectrum_player_tape_status) {
+		if (!amstrad_player_tape_status) {
 			// stopped
 			
-			if (spectrum_player_user_tape_status) {
+			if (amstrad_player_user_tape_status) {
 				// start tape
 				
-				initial_data(spectrum_player_pos == 0 ? 0 : last_block_pos);
+				initial_data(amstrad_player_pos == 0 ? 0 : last_block_pos);
 				
-				spectrum_player_tape_status = true;
+				amstrad_player_tape_status = true;
 
 				play();
 				

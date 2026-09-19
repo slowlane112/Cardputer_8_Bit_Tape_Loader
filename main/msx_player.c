@@ -145,15 +145,15 @@ static void display_progress(void) {
 		
 		
 		if (msx_use_remote) {
-			graphic_draw_status_indicator("Remote", !gpio_get_level(REMOTE_PIN), pos_x, pos_y, INDICATOR_MOTOR_COLOR, INDICATOR_OFF_COLOR);
+			graphic_draw_status_indicator("Remote", !gpio_get_level(REMOTE_PIN), pos_x, pos_y, INDICATOR_MOTOR_COLOR, INDICATOR_OFF_COLOR, true);
 		}
 		else {
-			graphic_draw_status_indicator("Remote", false, pos_x, pos_y, INDICATOR_OFF_COLOR, INDICATOR_OFF_COLOR);
+			graphic_draw_status_indicator("Remote", false, pos_x, pos_y, INDICATOR_OFF_COLOR, INDICATOR_OFF_COLOR, true);
 		}
 		
 		pos_y = pos_y + 24;
 		
-		graphic_draw_status_indicator("Data", has_data_activity(), pos_x, pos_y, INDICATOR_DATA_COLOR, INDICATOR_OFF_COLOR);
+		graphic_draw_status_indicator("Data", has_data_activity(), pos_x, pos_y, INDICATOR_DATA_COLOR, INDICATOR_OFF_COLOR, false);
 		
 		size_t display_pos = stop_pos == 0 ? msx_player_pos : stop_pos;
 		

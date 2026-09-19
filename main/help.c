@@ -78,6 +78,10 @@ static const char * const help_content[] = {
 	"Supports tap files.",
 	"R: Enable/disable remote.",
 	"",
+	"#Amstrad",
+	"Supports cdt files.",
+	"R: Enable/disable remote.",
+	"",
 	"#Project",
 	"https://github.com/slowlane11",
 	"2/Cardputer_8_Bit_Tape_Loader"
